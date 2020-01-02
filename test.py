@@ -6,10 +6,15 @@
 可选选项     -m -sta -pha
 '''
 
-import sys
+import re,os,glob,sys
+from obspy.core import UTCDateTime
+import matplotlib.pyplot as plt
+import numpy as np
 
 in_put   = sys.argv
 
+report_path = 'report'       #震相报告所在路径
+out_name    = 'result.txt'
 mag_index   = False
 sta_index   = False
 phase_index = False
@@ -28,12 +33,12 @@ for content in in_put:
         phase_index = in_put.index(content)
 start_time = in_put[start_time_index+1]
 end_time   = in_put[start_time_index+2]
-begin_time  = UTCDateTime(start_time)
-end_time    = UTCDateTime(end_time)
-lat_min   = in_put[lat_index+1]
-lat_max  = in_put[lat_index+2]
-lon_min   = in_put[lon_index+1]
-lon_max  = in_put[lon_index+2]
+begin_time = UTCDateTime(start_time)
+end_time   = UTCDateTime(end_time)
+lat_min    = float(in_put[lat_index+1])
+lat_max    = float(in_put[lat_index+2])
+lon_min    = float(in_put[lon_index+1])
+lon_max    = float(in_put[lon_index+2])
 
 if mag_index: #震级，默认是0-10
     mag  = in_put[mag_index+1].split(',')
@@ -51,7 +56,56 @@ print (mag_max)
 
 
 
-
+earth_num=0 #震相报告中的地震数量
+phase_num=0 #最终挑选的震相的数量
+earth=False
+report_files= glob.glob(report_path+'/*')
+total=len(report_files)
+num=0
+for report_file in report_files:
+   line_num=0
+   num+=1
+   percent=num/total
+   sys.stdout.write("\r{0}{1}".format("#"*10 , '%.2f%%' % (percent * 100)))
+   sys.stdout.flush()
+   with open(report_file,'r',encoding='gbk') as fr:
+       for line in fr:
+           i=0
+           line_num+=1
+           part=line.split()
+           try:
+               if part[0]=='DBO' : #DBO表示是某个地震
+                   bjtime  = UTCDateTime(part[2]+' '+part[3]) #发震时刻
+                   magnitude = float(line[56:61])             #震级
+                   if lat_min<=float(part[4])<=lat_max and  lon_min<=float(part[5])<=lon_max and  begin_time<=bjtime<=end_time and mag_min<=magnitude<=mag_max:
+                       earth=True #符合条件才会继续寻找相应的拾取台站到时信息
+                       gmttime = bjtime-8*3600
+                       earth_num+=1
+                       fa=open(out_name,'a+')
+                       fa.write(line)
+                       fa.close()
+                   else :
+                       earth=False
+               elif earth:
+                   if not sta_index and not phase_index: #如果没有提交台站以及震相
+                       fa=open(out_name,'a+')
+                       fa.write(line)
+                       fa.close()
+                   elif sta_index and not phase_index:   #如果提交了台站没有提交震相
+                       if part[2] in sta_list:
+                           fa=open(out_name,'a+')
+                           fa.write(line)
+                           fa.close()
+                   elif sta_index and phase_index :      #如果提交了台站和震相
+                       if part[2] in sta_list and (line[24:28].split()[0] in phase_list):
+                           fa=open(out_name,'a+')
+                           fa.write(line)
+                           fa.close()
+           except IndexError:
+               continue
+print ()
+print ('total earthquake ==',earth_num)
+print ('total phase      ==',phase_num)
 
 
 
