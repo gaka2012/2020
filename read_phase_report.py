@@ -10,19 +10,6 @@ from obspy.core import UTCDateTime
 import matplotlib.pyplot as plt
 import numpy as np
 
-sta_list=['WDT','ZHQ','JZG','QCH','PWU','JMG','ZJG','AXI','WCH','CD2','YZP','BAX','MDS','TQU','GZA','HMS']
-#st          = ['HWS','ANZ']         #需要寻找的台站
-phase_list  = ['Pg','Sg','Pn','Sn','P','S'] #需要寻找的震相
-report_path = 'report'       #震相报告所在路径
-out_name    = 'result.txt'                   #将结果文件移动到此路径下
-lat_min     = 29
-lat_max     = 34
-lon_min     = 101
-lon_max     = 107
-begin_time  = UTCDateTime('2017-01-01 00:00:00')
-end_time    = UTCDateTime('2019-12-31 00:00:00')
-
-
 earth_num=0 #震相报告中的地震数量
 phase_num=0 #最终挑选的震相的数量
 earth=False
@@ -54,10 +41,20 @@ for report_file in report_files:
                    else :
                        earth=False
                if earth:
-                   if part[2] in sta_list and (line[24:28].split()[0] in phase_list):
+                   if not sta_index and not phase_index: #如果没有提交台站以及震相
                        fa=open(out_name,'a+')
                        fa.write(line)
                        fa.close()
+                   elif sta_index and not phase_index:   #如果提交了台站没有提交震相
+                       if part[2] in sta_list:
+                           fa=open(out_name,'a+')
+                           fa.write(line)
+                           fa.close()
+                   elif sta_index and phase_index :      #如果提交了台站和震相
+                       if part[2] in sta_list and (line[24:28].split()[0] in phase_list):
+                           fa=open(out_name,'a+')
+                           fa.write(line)
+                           fa.close()
            except IndexError:
                continue
    
