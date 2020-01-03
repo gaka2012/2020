@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding:UTF-8 -*-
 '''
-使用方法 python test.py -t 2019-09-
+python3 read_report.py -t 2015-07-01T12:00:00 2015-08-10T20:00:00 -lat 3 50 -lon 70 150 -m 4,10 -sta BAC -pha P,Pg,Pn,S,Sg
 必须有的选项 -t -lat -lon 
 可选选项     -m -sta -pha
+
 '''
 
 import re,os,glob,sys
@@ -43,19 +44,18 @@ lon_max    = float(in_put[lon_index+2])
 if mag_index: #震级，默认是0-10
     mag  = in_put[mag_index+1].split(',')
     mag_min,mag_max = float(mag[0]),float(mag[1])
-    print (mag_min,mag_max)
+    #print (mag_min,mag_max)
 else:
     mag_min,mag_max=0,10
 if sta_index:
     sta_list = in_put[sta_index+1].split(',')
-    print (sta_list)
+    #print (sta_list)
 if phase_index:
     phase_list = in_put[phase_index+1].split(',')
-    print (phase_list)
-print (mag_max)
+    #print (phase_list)
 
 
-
+#print (mag_min,mag_max)
 earth_num=0 #震相报告中的地震数量
 phase_num=0 #最终挑选的震相的数量
 earth=False
@@ -76,8 +76,9 @@ for report_file in report_files:
            try:
                if part[0]=='DBO' : #DBO表示是某个地震
                    bjtime  = UTCDateTime(part[2]+' '+part[3]) #发震时刻
-                   magnitude = float(line[56:61])             #震级
+                   magnitude = abs(float(line[56:61]))             #震级
                    if lat_min<=float(part[4])<=lat_max and  lon_min<=float(part[5])<=lon_max and  begin_time<=bjtime<=end_time and mag_min<=magnitude<=mag_max:
+                       #print (magnitude)
                        earth=True #符合条件才会继续寻找相应的拾取台站到时信息
                        gmttime = bjtime-8*3600
                        earth_num+=1
@@ -88,9 +89,10 @@ for report_file in report_files:
                        earth=False
                elif earth:
                    if not sta_index and not phase_index: #如果没有提交台站以及震相
-                       fa=open(out_name,'a+')
-                       fa.write(line)
-                       fa.close()
+                       if part[0] == 'DPB':              #表明是台站报告，而不是其他乱七八糟的
+                           fa=open(out_name,'a+')
+                           fa.write(line)
+                           fa.close()
                    elif sta_index and not phase_index:   #如果提交了台站没有提交震相
                        if part[2] in sta_list:
                            fa=open(out_name,'a+')
@@ -105,7 +107,7 @@ for report_file in report_files:
                continue
 print ()
 print ('total earthquake ==',earth_num)
-print ('total phase      ==',phase_num)
+#print ('total phase      ==',phase_num)
 
 
 
