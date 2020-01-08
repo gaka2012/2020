@@ -2,8 +2,8 @@
 # -*- coding:UTF-8 -*-
 '''
 python3 read_report.py -t 2015-07-01T12:00:00 2015-08-10T20:00:00 -lat 3 50 -lon 70 150 -m 4,10 -sta BAC -pha P,Pg,Pn,S,Sg
-必须有的选项 -t -lat -lon 
-可选选项     -m -sta -pha
+必须有的选项 -t
+可选选项    -lat -lon -m -sta -pha
 
 '''
 
@@ -19,6 +19,8 @@ out_name    = 'result.txt'
 mag_index   = False
 sta_index   = False
 phase_index = False
+lat_index   = False
+lon_index   = False
 for content in in_put:
     if content == '-t':
         start_time_index = in_put.index(content)
@@ -36,10 +38,7 @@ start_time = in_put[start_time_index+1]
 end_time   = in_put[start_time_index+2]
 begin_time = UTCDateTime(start_time)
 end_time   = UTCDateTime(end_time)
-lat_min    = float(in_put[lat_index+1])
-lat_max    = float(in_put[lat_index+2])
-lon_min    = float(in_put[lon_index+1])
-lon_max    = float(in_put[lon_index+2])
+
 
 if mag_index: #震级，默认是0-10
     mag  = in_put[mag_index+1].split(',')
@@ -53,8 +52,17 @@ if sta_index:
 if phase_index:
     phase_list = in_put[phase_index+1].split(',')
     #print (phase_list)
-
-
+if lat_index:
+    lat_min    = float(in_put[lat_index+1])
+    lat_max    = float(in_put[lat_index+2])
+else:
+    lat_min    = -90
+    lat_max    = 90
+if lon_index:
+    lon_min    = float(in_put[lon_index+1])
+    lon_max    = float(in_put[lon_index+2])
+else:
+    lon_min,lon_max = -180,180
 #print (mag_min,mag_max)
 earth_num=0 #震相报告中的地震数量
 phase_num=0 #最终挑选的震相的数量
@@ -103,8 +111,9 @@ for report_file in report_files:
                            fa=open(out_name,'a+')
                            fa.write(line)
                            fa.close()
-           except IndexError:
+           except Exception as e:
                continue
+               #print (e,report_file,line_num)
 print ()
 print ('total earthquake ==',earth_num)
 #print ('total phase      ==',phase_num)
