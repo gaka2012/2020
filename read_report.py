@@ -117,7 +117,7 @@ for report_file in report_files:
 print ()
 print ('total earthquake ==',earth_num)
 #print ('total phase      ==',phase_num)
-
+#arrival_time= line [33:57] #拾取的到时
 
 
 
