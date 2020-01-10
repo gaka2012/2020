@@ -15,9 +15,11 @@ import datetime
 a=time.time()
 pick_file = 'mer3.txt' #手动挑选出的地震到时
 
-path1     = '/mnt/bashi_fs/filterpicker/picker' #存放结果的路径
-file1     = 'mer3_500' #这个是run_filterpicker.py中生成的，需要读取的存放结果的文件夹
-out_file  = 'mer3_500out' #最后生成的结果存放的文件。
+datapath     = '/home/zhangzhipeng/software/github/2020/data' #存放数据的路径
+resultpath   = '/home/zhangzhipeng/software/github/2020/result' #存放结果的路径 
+#path1     = '/mnt/bashi_fs/filterpicker/picker' #存放结果的路径
+file1     = 'mer3_600' #这个是run_filterpicker.py中生成的，需要读取的存放结果的文件夹
+out_file  = 'mer3_600out' #最后生成的结果存放的文件。
 max_pick  =  800  #每个文件中的pick的数量如果大于等于这个值则不读取。
 
 
@@ -30,7 +32,7 @@ with open(pick_file,'r') as f:
 
 
 #第一步，得到结果路径中所有的文件名，存放在name_list中，并输出其长度(文件的数量)
-path =path1+'/'+file1+'/*' 
+path =datapath+'/'+file1+'/*' 
 name_list=[]
 refiles=glob.glob(path)
 for path in refiles:
@@ -115,7 +117,7 @@ subprocess.call('rm zread1.txt',shell=True)
 
 ###########################################################################################
 #3 读取第二步产生的有序的结果，按照实际符合清空数目分开，存储在00中。
-out_path=os.path.join(path1,out_file)
+out_path=os.path.join(resultpath,out_file)
 
 if not os.path.exists(out_path):
     os.makedirs(out_path)
