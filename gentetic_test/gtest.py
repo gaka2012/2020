@@ -34,19 +34,19 @@ def encode(popular,max_num,min_num,gene_len):  # popular应该是float类型的�
 def decode(popular_gene,max_num,min_num,gene_len):
     fitness = []
     num_range = max_num-min_num
-    new_num = []
+    new_num = []  #存储将基因转换为数值后的数。
     for i in range(len(popular_gene)):
         x = (int(popular_gene[i], 2) / 2**gene_len) * num_range - min_num  #将基因装换为数值
         #value = x * np.sin(10 * np.pi * x) + 2        #函数公式
         new_num.append(x)
         value = x*x  
         fitness.append(value)
-    return fitness
+    return fitness,new_num
     #return new_num #返回一个列表，存储将基因装换为数值后的列表。
  
 # 选择and交叉。选择用轮牌赌，交叉概率为0.66
 def choice_ex(popular_gene,max_num,min_num,gene_len):
-    fitness = decode(popular_gene,max_num,min_num,gene_len) #输入的参数是原始基因，需要先解码。适应度函数直接就是y值本身
+    fitness = decode(popular_gene,max_num,min_num,gene_len)[0] #输入的参数是原始基因，需要先解码。适应度函数直接就是y值本身
     sum_fit_value = 0              #所有y值的和，由于是求最大值，适应度函数直接就是y值本身。所以这个实际上求的是所有适应度值的和。
     for i in range(len(fitness)):
         sum_fit_value += fitness[i]
@@ -125,12 +125,20 @@ if __name__ == '__main__':  # alt+enter
     for i in range(1000):  # 迭代次数。繁殖1000代
         new_popular_gene = choice_ex(new_popular_gene,max_num,min_num,gene_len)  # 第三步：选择和交叉
         new_popular_gene = variation(new_popular_gene,gene_len)  # 变异
-        # 取当代所有个体适应度平均值
-        new_fitness = decode(new_popular_gene,max_num,min_num,gene_len)
+        # new_fitness是一个列表，存储每个x值对应的y值，对这些y值求和，然后处以y值的数量，得到平均y值。
+        new_fitness = decode(new_popular_gene,max_num,min_num,gene_len)[0]
+        
+        #每次迭代后剩下的x值会越来越向着最佳x值逼近，new_x存储每次迭代后的x值列表。
+        new_x = decode(new_popular_gene,max_num,min_num,gene_len)[1]
+        #查看第i次迭代后的x值列表
+        if i ==5:
+            print (new_x)
+        
+        #求每次迭代后的y值的平均值。
         sum_new_fitness = 0
         for j in new_fitness:
             sum_new_fitness += j
-        y.append(sum_new_fitness/len(new_fitness))
+        y.append(sum_new_fitness/len(new_fitness)) #每次迭代都能得到一个平均y值，
     
     # 画图 #横坐标是迭代次数，纵坐标是y值。
     x = np.linspace(0, 1000, 1000)
@@ -138,5 +146,5 @@ if __name__ == '__main__':  # alt+enter
     axis = fig.add_subplot(111)  # 坐标轴
     axis.plot(x, y)
     plt.savefig('test')
-    plt.show()
-    
+    #plt.show()
+    plt.close()

@@ -14,5 +14,5 @@ def test(a,b):
     b0.append(b)
     return a0,b0
 
-c=test(1,3)
-print (c[0])
+c=test(1,3)[1]
+print (c)
