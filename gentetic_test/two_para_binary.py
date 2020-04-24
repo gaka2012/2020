@@ -7,15 +7,36 @@ import random
  
  
 # (-1, 2)
+
+#初始化原始种群,输入种群的数量以及最大值，最小值。按照顺序生成数值。
+def num_popular(num,max_num,min_num):
+    popular = []
+    te = []
+    for i in range(min_num,max_num+1):
+        te.append(i)
+    j=0
+    #根据num的值，增加popular的数量。
+    for i in range(num):
+        if j>(len(te)-1):
+            j=0
+            x = te[j]
+        else :
+            x = te[j] 
+            x = round(x,2)
+        popular.append(x)
+        j+=1
+    random.shuffle(popular) #将顺序打乱，貌似能稍微好点。
+    return popular
+'''
 # 初始化原始种群,输入种群的数量以及最大值，最小值。
 def num_popular(num,max_num,min_num):
     popular = []
     for i in range(num):
-        x = random.uniform(min_num, max_num)  # 在此范围内生成一个随机浮点数
-        x = round(x,2)
+        x = random.randint(min_num, max_num)  # 在此范围内生成一个随机浮点数
+        #x = round(x,2)
         popular.append(x)
     return popular
- 
+'''
  
 # 编码，也就是由表现型到基因型，性征到染色体,将实数转换为二进制的数。
 def encode(gene_dict):
@@ -148,7 +169,7 @@ def variation(gene_dict):
 #(3)第三步，首先要解码，注意更改解码公式，以及函数公式。
 if __name__ == '__main__':  # alt+enter
     # 第一步：初始化原始种群, 多个参数，每个参数都有4个变量，个体数目，取值的最大值，最小值,基因的长度。初始长度要保持一致，最大最小值不能一样。
-    multi_para = [[400,10,0,8],[400,15,0,8]]
+    multi_para = [[400,31,0,5],[400,63,0,6]]
     
     #返回的原始种群ori_popular是一个字典，里面的键值是每一初始种群的最大、最小、以及基因长度，对应的值是其初始化后的n个x值。
     ori_popular = {}
@@ -178,8 +199,9 @@ if __name__ == '__main__':  # alt+enter
     #result = decode(new_popular_gene,max_num,min_num)
     #print (max(result))
 
+    all_x = [] #存储所有的x值。
     y = []
-    for i in range(500):  # 迭代次数。繁殖1000代
+    for i in range(1000):  # 迭代次数。繁殖1000代
         new_popular_gene = choice_ex(new_popular_gene)  # 第三步：选择和交叉,输入的是一个编码后的基因字典，输出的是一个交叉后的基因字典。
         new_popular_gene = variation(new_popular_gene)  # 变异,输入的是一个选择交叉后的基因字典，输出的是一个变异后的字典。
         
@@ -188,6 +210,8 @@ if __name__ == '__main__':  # alt+enter
         
         #每次迭代后剩下的x值会越来越向着最佳x值逼近，new_x存储每次迭代后的x值列表。
         new_x = decode(new_popular_gene)[1]#存储基因翻译过来的数值。列表中有列表，有几个参数，就有几个列表
+        
+        all_x.append(new_x)
         #查看第i次迭代后的x值列表
         #if i ==300:
         #    print (test_x)
@@ -201,15 +225,26 @@ if __name__ == '__main__':  # alt+enter
             sum_new_fitness += j
         y.append(sum_new_fitness/len(new_fitness)) #每次迭代都能得到一个平均y值，
     #print (y)
-
+    #找到最大的目标函数值，看看有几个。
+    max_y = max(y)
+    m = 0
+    
+    for j in range(len(y)):
+        if y[j]==max_y:
+            m+=1
+            fc= open('max_x.txt','a+')
+            fc.write(str(all_x[j]))
+            fc.write('\n')
+            fc.close()    
+    print('there are %s max_y and it is %s'%(m,max_y))
 
     # 画图 #横坐标是迭代次数，纵坐标是y值。
-    x = np.linspace(0, 500, 500)
+    x = np.linspace(0, 1000, 1000)
     fig = plt.figure(figsize=(25,15))  # 相当于一个画板
     axis = fig.add_subplot(111)  # 坐标轴
     plt.tick_params(labelsize=23)
     axis.plot(x, y)
-    plt.savefig('test')
+    plt.savefig('two_binary')
     #plt.show()
     plt.close()
 

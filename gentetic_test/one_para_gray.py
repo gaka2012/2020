@@ -4,29 +4,68 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import random
- 
+
+
+#格雷编码返回到二进制编码,输入一个格雷编码基因，返回一个二进制基因。
+def gray_decode(bin_num):
+    te_str = ''
+    an_point = int(bin_num[2])  #初始锚点是左边第一个基因。
+    for i in range(3,len(bin_num)):
+        te = an_point^int(bin_num[i]) #每次异或完后的基因作为新的锚点
+        an_point = te
+        te_str+= str(te)
+    return bin_num[0:3]+te_str
+
+#二进制吗到格雷编码，输入一个二进制基因，返回一个格雷编码。
+def gray_encode(bin_num):
+    te_str = ''
+    for i in range(len(bin_num)-1,2,-1):
+        te = int(bin_num[i])^int(bin_num[i-1])
+        te_str=''.join([str(te),te_str])
+    return bin_num[0:3]+ te_str         
  
 # (-1, 2)
+def ori_popular(num,max_num,min_num):
+    popular = []
+    te = []
+    for i in range(min_num,max_num+1):
+        te.append(i)
+    j=0
+    #根据num的值，增加popular的数量。
+    for i in range(num):
+        if j>(len(te)-1):
+            j=0
+            x = te[j]
+        else :
+            x = te[j] 
+            x = round(x,2)
+        popular.append(x)
+        j+=1
+    #random.shuffle(popular) #将顺序打乱，貌似能稍微好点。
+    return popular
+'''
 # 初始化原始种群,输入种群的数量以及最大值，最小值。
 def ori_popular(num,max_num,min_num):
     popular = []
     for i in range(num):
-        x = random.uniform(min_num, max_num)  # 在此范围内生成一个随机浮点数
-        x = round(x,2)
+        #x = random.uniform(min_num, max_num)  # 在此范围内生成一个随机浮点数
+        #x = round(x,2)
+        x = random.randint(min_num,max_num)
         popular.append(x)
     return popular
- 
+'''
  
 # 编码，也就是由表现型到基因型，性征到染色体,将实数转换为二进制的数。
 def encode(popular,max_num,min_num,gene_len):  # popular应该是float类型的列表
     popular_gene = []
     num_range    = max_num-min_num
     for i in range(0, len(popular)):               #公式 (b-a)/(Max-Min)*(Y)+a=x,其中a,b是[-1,2],Max是二进制最大值。x表示popular[i],下面的公式是求Y，即二进制数值。
-        data = int((popular[i]-(min_num)) / num_range * 2**gene_len)  # 染色体序列为18bit，由于取值范围是[-1,2]，区间是3,如果保留4位有效数字，有3×10××4=3万个数。
+        data = int((popular[i]-(min_num)) / num_range * (2**gene_len-1))  # 染色体序列为18bit，由于取值范围是[-1,2]，区间是3,如果保留4位有效数字，有3×10××4=3万个数。
         bin_data = bin(data)  # 整形转换成二进制是以字符串的形式存在的
         for j in range(len(bin_data)-2, gene_len):  # 序列长度不足补0
             bin_data = bin_data[0:2] + '0' + bin_data[2:]
-        popular_gene.append(bin_data)
+        popular_gene.append(gray_encode(bin_data))
+        #popular_gene.append(bin_data)
     return popular_gene
  
  
@@ -36,7 +75,8 @@ def decode(popular_gene,max_num,min_num,gene_len):
     num_range = max_num-min_num
     new_num = []  #存储将基因转换为数值后的数。
     for i in range(len(popular_gene)):
-        x = (int(popular_gene[i], 2) / 2**gene_len) * num_range - min_num  #将基因装换为数值
+        temp_ge = gray_decode(popular_gene[i])
+        x = (int(temp_ge,2) / (2**gene_len-1)) * num_range + min_num  #将基因装换为数值
         #value = x * np.sin(10 * np.pi * x) + 2        #函数公式
         new_num.append(x)
         value = x*x  
@@ -61,8 +101,10 @@ def choice_ex(popular_gene,max_num,min_num,gene_len):
             probability_sum.append(probability[i])
         else:
             probability_sum.append(probability_sum[i-1] + probability[i])
- 
-    # 选择
+
+
+    
+    # 选择    
     popular_new = []
     for i in range(int(len(fitness)/2)): #一共有100个原始数据，将其分成50组，每组2个基因，然后生成2个随机数字(范围是0-1)
                                          #看一下这2个数字的范围符合哪个基因的概率分布，从而把这2个基因挑出来。
@@ -109,42 +151,68 @@ def variation(popular_new,gene_len): #输入的参数是经过选择交叉后的
 #(3)第三步，首先要解码，注意更改解码公式，以及函数公式。
 if __name__ == '__main__':  # alt+enter
     # 第一步：初始化原始种群, 一百个个体,取值范围最大最小值。
-    num,max_num,min_num = 100,100,0
-    gene_len = 8 
+    num,max_num,min_num = 100,63,0
+    gene_len = 6 
     ori_popular = ori_popular(num,max_num,min_num) #返回一个列表，里面是[-1,2]区间内的100个随机数
     
-    
+    #print (ori_popular)
     # 第二步：得到原始种群的基因，返回一个列表，里面是100个随机数对应的基因。
     ori_popular_gene = encode(ori_popular,max_num,min_num,gene_len)  # 18位基因
+    
+    #输出测试
+    #new_test = decode(ori_popular_gene,max_num,min_num,gene_len)[1]
+    #gray_list = [gray_decode(i) for  i in ori_popular_gene]
+    
     new_popular_gene = ori_popular_gene
     #print (new_popular_gene)
     #result = decode(new_popular_gene,max_num,min_num)
     #print (max(result))
-    
+
+
+    all_x = [] #存储所有的x值。
     y = []
     for i in range(1000):  # 迭代次数。繁殖1000代
         new_popular_gene = choice_ex(new_popular_gene,max_num,min_num,gene_len)  # 第三步：选择和交叉
-        new_popular_gene = variation(new_popular_gene,gene_len)  # 变异
+        #new_popular_gene = variation(new_popular_gene,gene_len)  # 变异
         # new_fitness是一个列表，存储每个x值对应的y值，对这些y值求和，然后处以y值的数量，得到平均y值。
         new_fitness = decode(new_popular_gene,max_num,min_num,gene_len)[0]
         
         #每次迭代后剩下的x值会越来越向着最佳x值逼近，new_x存储每次迭代后的x值列表。
         new_x = decode(new_popular_gene,max_num,min_num,gene_len)[1]
+        all_x.append(new_x)
+        #print (new_x)
         #查看第i次迭代后的x值列表
-        if i ==5:
-            print (new_x)
+        #if i ==5:
+        #    print (new_x)
         
         #求每次迭代后的y值的平均值。
         sum_new_fitness = 0
         for j in new_fitness:
             sum_new_fitness += j
         y.append(sum_new_fitness/len(new_fitness)) #每次迭代都能得到一个平均y值，
-    
+
+
+
+    #找到最大的目标函数值，看看有几个。
+    max_y = max(y)
+    m = 0
+    for j in range(len(y)):
+        if y[j]==max_y:
+            m+=1
+            fc= open('max_x.txt','a+')
+            fc.write(str(all_x[j]))
+            fc.write('\n')
+            fc.close()    
+    print('there are %s max_y and it is %s'%(m,max_y))
+
     # 画图 #横坐标是迭代次数，纵坐标是y值。
     x = np.linspace(0, 1000, 1000)
     fig = plt.figure(figsize=(25,15))  # 相当于一个画板
     axis = fig.add_subplot(111)  # 坐标轴
     axis.plot(x, y)
-    plt.savefig('test')
+    plt.savefig('one_gray.png')
     #plt.show()
     plt.close()
+
+    
+    
