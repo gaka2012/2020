@@ -37,17 +37,9 @@ print (en)
 test = gray_decode(en)
 print (test)
 '''
-
-def test(a):
-    c =10
-    for i in range(len(a)):
-        a[i] = a[i]+10
-    return c
-
-a = [1,2,3,4,5,6,7,8]
-b = test(a)
-print (b)
-print (a)
+for  i  in range(100):
+    a = random.uniform(0, 1)
+    print (a)
 
 
 
