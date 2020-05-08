@@ -13,6 +13,12 @@ import numpy as np
 from itertools import groupby
 from obspy.core import stream
 
+
+'''
+本程序会读取震相报告(输入4个参数)，生成基础字典，输出字典内容，画震级分布图。
+根据提取的p波到时信息截取数据，存成sac格式。
+'''
+
 def cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,net,sta,save_data): #输入一个trace,进行截取，并修改头文件信息
     c_tr = tr.copy()
     data = c_tr.trim(gt-cut_pro, gt+cut_end,pad=True, fill_value=0) 
