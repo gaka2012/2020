@@ -1,0 +1,3 @@
+1 生成的特征函数文件zzp1.txt,首先复制到第三步目录下
+2 编译运行r.c:将zzp1.txt转换成2进制文件num2.txt
+3 运行readsac.c :将num2.txt以及sac文件转换成head.sac文件。(特征函数所在的sac格式)

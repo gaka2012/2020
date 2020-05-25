@@ -8,8 +8,21 @@ from datetime import *
 from obspy.core import UTCDateTime
 
 
+'''
+st = read('/home/zhangzhipeng/software/github/2020/program/datatest/*.sac')
+st.sort(['starttime'])
+for tr in st:
+    s = tr.stats.sac
+    r_time = UTCDateTime(year=s.nzyear,julday=s.nzjday,hour=s.nzhour,minute=s.nzmin,second=s.nzsec,microsecond=s.nzmsec*1000) #参考时刻
+    p_time = r_time+s.a
+    print (p_time)
+'''
 
+#st = read('/home/zhangzhipeng/software/github/2020/program/sac_data/SC.AXI_20180120121318.BHZ.sac')
+#print (st[0].stats.sac.t0)
 
+st = read('*.sac')
+print (st[0].stats.sac)
 
 '''
 a = ['xxx.BHE.sac','xxx.BHZ.sac','xxx.BHZ.sac']
@@ -88,36 +101,6 @@ print (st[0].stats.sac.b)
 
 
 
-'''
-st = stream.Stream()
-print (dir(st))  #stream.Stream实际上一个在文件stream.py中的一个类，dir会显示这个类的属性，以及其函数。
-print (help(st.merge)) #help会显示类st中的方法(函数)merge的用法。
-'''
-
-'''
-import matplotlib.pyplot as plt
-from itertools import groupby
-
-def plot_num_distribution(num_list,fig_name): #画不同震级的数量分布图.
-    x_list,y_list = [],[]  #输入不同的震级形成的列表
-    for k,g in groupby(sorted(num_list),key=lambda x:int(x//1)): #统计震级的数量，x_list是拥有的整数震级，y是各个震级的数量。
-        x_list.append(k)
-        y_list.append(len(list(g)))
-    
-    plt.figure(figsize=(25, 15))
-    #print (dir(plt))
-    plt.bar(x_list,y_list,color='blue',width=0.1) #柱状图的宽度
-    plt.title(fig_name,fontsize=24,color='r')
-    plt.tick_params(labelsize=23)
-    plt.savefig(fig_name)  #注意要在plt.show之前
-    #plt.show()
-    plt.close()
-
-num_list = [0.1,0.3,1,2,3,4,5,1.2,1,1] #y轴数据         
-name = 'test'
-plot_num_distribution(num_list,name)
-
-'''
 
 
 

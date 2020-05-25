@@ -1,0 +1,2 @@
+/home/zhangzhipeng/software/github/2020/program/datatest/SC.AXI_20180101062906.BHZ.sac 2017-12-31T22:29:09.200000Z
+/home/zhangzhipeng/software/github/2020/program/datatest/SC.AXI_20180101225925.BHZ.sac 2018-01-01T14:59:31.650000Z
