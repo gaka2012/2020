@@ -35,6 +35,7 @@ struct HDR{
 	float CMPINC;
 	float UNUSED2[11];
 	
+	
 	int NZYEAR;
 	int NZJDAY;
 	int NZHOUR;
