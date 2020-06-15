@@ -351,6 +351,7 @@ if __name__ == '__main__':  # alt+enter
     fig = plt.figure(figsize=(25,15))  # 相当于一个画板
     axis = fig.add_subplot(111)  # 坐标轴
     plt.tick_params(labelsize=23)
+    axis.set_xlim(0,500)   #设置取值范围是0-500,即使中途break,但是画图仍然画到500。 
     axis.plot(x, y)
     plt.savefig('two_gray_adaptive')
     #plt.show()
