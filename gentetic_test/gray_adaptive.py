@@ -3,7 +3,8 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-import random
+import random,sys,os,glob
+import subprocess
  
  
 # (-1, 2)
@@ -28,7 +29,7 @@ def gray_encode(bin_num):
     return bin_num[0:3]+ te_str         
 
 
-#初始化原始种群,输入种群的数量以及最大值，最小值。按照顺序生成数值。
+#初始化原始种群,输入种群的数量以及最大值，最小值。按照顺序生成数值。一开始会按最小最大值的顺序生成num个数，最后会打乱顺序。比如num=30,(1,10) 会生成3遍1-10,然后会打乱顺序。
 def num_popular(num,max_num,min_num):
     popular = []
     te = []
@@ -88,10 +89,19 @@ def decode(gene_dict):
             tem_list.append(x)
         x_list.append(tem_list)
     
-    #对输入的多个参数对应的x值求适应度函数
+    
+    #对输入的多个参数对应的x值求适应度函数,调用FP
+    program_path = '/home/zhangzhipeng/software/github/2020/picker'  #程序所在的路径，需要先进入路径才运行    
+    input_data   = 'test.txt'                                         #.带入反演的数据名称 mer1.sac
+    out_file     = 'zday1.txt'  #生成的结果的文件夹
+    tup1,t1,t2   = 39,3,3
     for i in range(len(x_list[0])): #每个参数n个基因，数量是相同的。
-        y_value = x_list[0][i]**2+x_list[1][i]*3 #函数y=x**2+3z
-        fitness.append(y_value)  
+        y_value = x_list[0][i]**2+x_list[1][i]*4 #函数y=x**2+3z
+        #test    = subprocess.check_output('cd %s;./picker_func_test %s %s  %s %s %s %s %s' %(program_path,input_data,out_file,x_list[0][i],x_list[1][i],tup1,t1,t2),shell=True)
+        #print (test,x_list[0][i],x_list[1][i])
+        
+        #y_value = float(bytes.decode(test)) #FP的返回结果是二进制，转换成字符并转换成小数。就是目标函数的结果。
+        fitness.append(y_value)   #这个地方计算得到的y_value是2位小数的。
     return fitness,x_list
       
 
@@ -101,12 +111,13 @@ def choice_ex(gene_dict,collect_max,fit_ave):
     #将所有的初始基因放在一个列表下，方便后面的基因交换，节省时间。
     value_list = []
     key_list   = []
+    gene_len   = []
     para_num   = 0 #看一下有几个参数
     for key,value in gene_dict.items():
         value_list.append(value)
         key_list.append(key)
         para_num+=1
-        gene_len = key[2]  #基因长度  
+        gene_len.append(key[2])  #基因长度  
     #求适应度函数的和
     fitness = decode(gene_dict)[0]#输入的参数是原始基因字典，需要先解码。返回值是适应度函数y值本身
     sum_fit_value = 0              #所有y值的和，由于是求最大值，适应度函数直接就是y值本身。所以这个实际上求的是所有适应度值的和。
@@ -131,6 +142,7 @@ def choice_ex(gene_dict,collect_max,fit_ave):
         te = []
         tem_popular_new.append(te)
         
+    #print ('choice----',max(fitness),fitness.count(max(fitness)),collect_max)    
     for i in range(int(len(fitness)/2)): #一共有100个原始数据，将其分成50组，每组2个原始数据，2个基因，然后生成2个随机数字(范围是0-1)
                                          #看一下这2个数字的范围符合哪2个数据的概率分布，从而把这2个基因挑出来。
         temp = [] #存储临时选出来的基因，有几个参数就选几个。
@@ -153,6 +165,7 @@ def choice_ex(gene_dict,collect_max,fit_ave):
                         for m in range(para_num):
                             temp[m].append(value_list[m][k])
                             
+           
         # 交叉，交叉几率根据公式来，每次挑出2个基因，找到y值大的那个数带入公式。
         if (collect_max-fit_ave)==0: #防止商出现等于0的情况
             division = 1
@@ -164,9 +177,10 @@ def choice_ex(gene_dict,collect_max,fit_ave):
             k1 = 0.5
         is_change = random.uniform(0,1)
         
-        change_len=int(gene_len/2)  #交换的基因的长度，如果是4,则交换其中的2个基因。注意基因的前2个是符号0b，不参与交换。
+
         if is_change<k1:  #如果上一行的代码的结果是1,2就交叉，是0就不交叉，所以概率是 2/3=0.66
             for h in range(len(temp)):
+                change_len=int(gene_len[h]/2)  #交换的基因的长度，如果是4,则交换其中的2个基因。注意基因的前2个是符号0b，不参与交换。            
                 temp_s = temp[h][0][1+change_len:1+change_len*2]
                 temp[h][0] = temp[h][0][0:1+change_len] + temp[h][1][1+change_len:1+change_len*2] + temp[h][0][1+change_len*2:]
                 temp[h][1] = temp[h][1][0:1+change_len] + temp_s + temp[h][1][1+change_len*2:] #基因总长度是18,交换其中的9-14,共计6个基
@@ -179,9 +193,9 @@ def choice_ex(gene_dict,collect_max,fit_ave):
     return popular_new
 
 def variation(gene_dict,collect_max,fit_ave):
-    fitness = decode(gene_dict)[0]    
+    fitness = decode(gene_dict)[0]  
+    
     gene_num = len(list(gene_dict.values())[0]) #字典中的值的长度。
-    gene_len = list(gene_dict.keys())[0][2]     #基因长度
     for i in range(gene_num):
         #计算变异率
         y1 = fitness[i]
@@ -199,9 +213,11 @@ def variation(gene_dict,collect_max,fit_ave):
     
         is_variation = random.uniform(0,1)
         if is_variation < k2:
-            #print(i)
-            rand = random.randint(2,gene_len) #变异，实际上就是对基因2-18中的某一个基因变成0或1,不包括2,gene_len+1
             for key,value in gene_dict.items():
+                #多参数时，不同参数的基因长度不一样。
+                gene_len = key[2]
+                rand = random.randint(2,gene_len) #变异，实际上就是对基因2-18中的某一个基因变成0或1,不包括2,gene_len+1
+
                 if value[i][rand] == '0':
                     value[i] = value[i][0:rand] + '1' + value[i][rand+1:]
                 else:
@@ -209,16 +225,17 @@ def variation(gene_dict,collect_max,fit_ave):
     return gene_dict        
  
 #需要修改的参数：
-#(1)num=100; 初始化的取值数量，比如求[-1,2]区间y=x**2的最大值，随机取100个x值;注意在第一步的子函数中修改取值范围。
-#(2)第二步，注意修改子函数中的基因长度， 
-#(3)第三步，首先要解码，注意更改解码公式，以及函数公式。
+#(1)第一步， 初始化的取值数量，比如求[-1,2]区间y=x**2的最大值，随机取100个x值;注意在第一步的子函数中修改取值范围。
+#(2)第二步， 修改decode子函数中的函数公式。
+#(3)修改迭代次数，在第多少次之后break,或者不会break,
 if __name__ == '__main__':  # alt+enter
     # 第一步：初始化原始种群, 多个参数，每个参数都有4个变量，个体数目，取值的最大值，最小值,基因的长度。初始长度要保持一致，最大最小值不能一样。    
-    multi_para = [[400,31,0,5],[400,63,0,6]]
+    multi_para = [[100,62,31,5],[100,1023,0,10]]
     
     #初始化适应度最大及均值
     fit_max,fit_ave = 0,0  #适应度最大值以及平均值。
     collect_max     = 0    #适应度历史最大值
+    
     
     #返回的原始种群ori_popular是一个字典，里面的键值是每一初始种群的最大、最小、以及基因长度，对应的值是其初始化后的n个x值。
     ori_popular = {}
@@ -242,14 +259,18 @@ if __name__ == '__main__':  # alt+enter
     for i in range(len(test_x)):
         print ('the %sst parameter =='%i,test_x[i])  
         print ()
-
     '''
+    
     # 第二步：得到原始种群的基因，返回一个列表，里面是100个随机数对应的基因。
     ori_popular_gene = encode(ori_popular)  #返回的ori_popular_gene是一个字典，键是[max,min,基因长度]，对应的值是n个基因
     new_popular_gene = ori_popular_gene
 
     #计算第一次适应度最大及均值
     fit_first     = decode(new_popular_gene)[0] #得到适应度列表
+    
+    
+    
+    
     sum_fit_first = 0
     for j in fit_first:
         sum_fit_first +=j
@@ -259,13 +280,31 @@ if __name__ == '__main__':  # alt+enter
     #进行迭代
     all_x = [] #存储所有的x值。
     y = []
-    for i in range(1000):  # 迭代次数。繁殖1000代
+    
+    bar_num   = 0
+    total     = 500
+    for i in range(500):  # 迭代次数。繁殖1000代
+        
+        #进度条
+        bar_num+=1
+        percent=bar_num/total #用于写进度条
+        sys.stdout.write("\r{0}{1}".format("#"*10 , '%.2f%%' % (percent * 100)))
+        sys.stdout.flush()
+        
         #找到适应度历史最大值
         if fit_max>=collect_max:
             collect_max = fit_max
         
+        #print('max-ave====',fit_max,fit_ave)
         new_popular_gene = choice_ex(new_popular_gene,collect_max,fit_ave)  # 第三步：选择和交叉,输入的是一个编码后的基因字典，输出的是一个交叉后的基因字典。
-        new_popular_gene = variation(new_popular_gene,collect_max,fit_ave)  # 变异,输入的是一个选择交叉后的基因字典，输出的是一个变异后的字典。
+       
+        #测试
+#        test_x = decode(new_popular_gene)[0]
+#        max_x  = max(test_x)
+#        print ('测试',max_x,test_x.count(max_x))
+        
+        new_popular_gene = variation(new_popular_gene,collect_max,fit_ave)  # 变异,输入的是一个选择交叉后的基因字典，输出的是一个变异后的字典.
+        
         
         # new_fitness是一个列表，存储每个x值对应的y值，对这些y值求和，然后处以y值的数量，得到平均y值。
         new_fitness = decode(new_popular_gene)[0]
@@ -280,13 +319,19 @@ if __name__ == '__main__':  # alt+enter
         sum_new_fitness = 0
         for j in new_fitness:
             sum_new_fitness += j
-        y.append(sum_new_fitness/len(new_fitness)) #每次迭代都能得到一个平均y值，
+        y.append(round(sum_new_fitness/len(new_fitness),2)) #每次迭代都能得到一个平均y值，保留2未小数。
         
         #更新适应度最大和均值
         fit_max = max(new_fitness)
         fit_ave = sum_new_fitness/len(new_fitness)
+        
+        #迭代100次后当有4次迭代的y值，即均值一致时，break。
+        if i>200:
+            if y[i]==y[i-1] and y[i-1]==y[i-2] and y[i-2]==y[i-3]:
+                break
        
-    print (collect_max)
+    print()
+    print (collect_max) #这个是单个基因组成的最大值，下面的max_y是y值的平均值的最大值，如果这2个数不一致，通常说明单个基因最大值没有被保存下来。原因是
     #找到最大的目标函数值，看看有几个。
     max_y = max(y)
     m = 0
@@ -300,8 +345,9 @@ if __name__ == '__main__':  # alt+enter
             fc.close()    
     print('there are %s max_y and it is %s'%(m,max_y))
 
+    #print (y)
     # 画图 #横坐标是迭代次数，纵坐标是y值。
-    x = np.linspace(0, 1000, 1000)
+    x = np.linspace(0, len(y), len(y))  #最终画图的横纵坐标根据y的大小来，即迭代的次数。
     fig = plt.figure(figsize=(25,15))  # 相当于一个画板
     axis = fig.add_subplot(111)  # 坐标轴
     plt.tick_params(labelsize=23)
@@ -309,6 +355,6 @@ if __name__ == '__main__':  # alt+enter
     plt.savefig('two_gray_adaptive')
     #plt.show()
     plt.close()
-
+    
 
     
