@@ -70,12 +70,12 @@ def cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,n
     nhour,nmin,nsec   = ntime.split(':')
     nsec = nsec.split('.')[0]
     nout =''.join([nyear,nmonth,nday,nhour,nmin,nsec])#20190101120001
-    data_name = net+'.'+sta+'_'+nout+'.'+tr.stats.channel+'.sac'
+    data_name = net+'.'+sta+'_'+nout+'.'+tr.stats.channel+'_noise.sac'  #如果是噪声则用这个命名
     data.write(data_name,format='SAC')
     #将数据移动到位置
     os.system('mv *.sac %s'%(save_data))
 
-def plot_sac(sac_name): #输入一个截取好的sac文件名，(90s的单个文件)，画图并画到时和发震时刻竖线,生成的文件名是北京时间发震时刻去掉后面加上png
+def plot_sac(sac_name): #输入一个截取好的sac文件名，(90s的单个文件)，画图并画到时和发震时刻竖线,生成的文件名是北京时间发震时刻去掉后面加上信噪比加上png
     print (sac_name)
     st = read(sac_name)
     tr=st[0] #原始数据
@@ -137,7 +137,7 @@ def plot_sac(sac_name): #输入一个截取好的sac文件名，(90s的单个文
     ax.xaxis.set_major_formatter(mdate.DateFormatter('%Y/%m/%d %H:%M:%S'))
     plt.plot(t_list,tr.data)
     plt_name = '.'.join(sac_name.split('.')[0:2]) #SC.AXI_20180101225925
-    plt_name+= '.png'
+    plt_name+= '_'+str(s.t9)+'.png'
     plt.savefig(plt_name)
     #plt.show()        #展示，可以2选1
     plt.close()       #关闭，否则会占内存
@@ -181,19 +181,19 @@ data_path = '/home/zhangzhipeng/datatest'  #存放原始数据的位置，下一
 
 #
 
-dict_test  = False  #输出字典内容
+dict_test  = True  #输出字典内容
 mag_distri = False  #画震级分布图
-cut        = True  #截取数据,并计算信噪比，要自己输入p波和噪声的时间长度，计算完后存放在t9中。
+cut        = False  #截取数据,并计算信噪比，要自己输入p波和噪声的时间长度，计算完后存放在t9中。
 p_s_diff   = False   #震中距分布图。
 
-save_data = '/home/zhangzhipeng/software/github/2020/program/sac_data' #截取后的数据保存位置
+save_data = '/home/zhangzhipeng/software/github/2020/program/test' #截取后的数据保存位置
 
-cut_pro,cut_end   = 60,60     #以P波为基准，提前30s，延后60s进行截取
+cut_pro,cut_end   = 120,0     #以P波为基准，提前30s，延后60s进行截取
 phase_list   = ['Pg','Pn','P','Pb'] #截取P波震相
 s_phase_list = ['Sg','S','Sn']  #截取S波震相
 
 #首先输入数据调用class类，共4个数据。寻到符合台网-台站以及震相列表的地震手动拾取。
-report_path  = '/home/zhangzhipeng/software/github/2020/program/report' #存放震相报告的路径
+report_path  = '/home/zhangzhipeng/report-temporary' #存放震相报告的路径
 file_list    = ['2018-01.txt']
 #file_list    = ['2018-01.txt','2018-02.txt','2018-03.txt','2018-04.txt','2018-05.txt','2018-06.txt','2018-07.txt','2018-08.txt','2018-09.txt','2018-10.txt','2018-11.txt','2018-12.txt',] 
 #sta_list  = ['AXI']
@@ -275,8 +275,7 @@ if __name__=="__main__":
                 
             print (key)
             for i in value:
-                if i[5]<0: #如果震中距小于0则输出。
-                    print (i)
+                print (i)
             #print (len(value))
     
     #画震级分布图

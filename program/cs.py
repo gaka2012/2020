@@ -56,39 +56,11 @@ st.plot(starttime= h0 ,endtime=h1,equal_scale=False,outfile=png_file,color='red'
 #st.plot(starttime= h0 ,endtime=h1,equal_scale=False,outfile=png_file1,color='red',size=(1800,1000)) #单张图，这个size比较好，三张图一起画，默认size就行。
 #st[0].write('SC.AXI_20180101062906.BHZ.sac',format='SAC')
 
-#计算信噪比，输入trace,P波到时，噪声取值长度，p波取值长度，返回计算后的信噪比
-def cal_SNR(tr,tp,before_tp,after_tp): 
-    print (tr)
-    #计算信噪比
-    c_st = tr.copy()
-    n_st = tr.copy()
-    #1 剪切p波前后3秒，并转换为numpy格式数据
-    no_data = n_st.trim(tp-before_tp,tp,pad=True, fill_value=0)
-    no_data = np.asarray(no_data)
-    p_data  = c_st.trim(tp, tp + after_tp,pad=True, fill_value=0)   #默认pad是false,这里是True，当给定的截取时间超出了数据范围会自动补fill_value,如果默认则不画超出的时间。
-    p_data  = np.asarray(p_data)
-    #2 numpy去绝对值
-    ab_data = np.fabs(p_data) #P波取绝对值
-    ab_nois = np.fabs(no_data)#噪声取绝对值
-    #3 求p波最大值处以噪声均值
-    p_max  = max(ab_data) #p波最大值
-    n_mean = np.sum(ab_nois)/(len(ab_nois)) #噪声均值
-    if n_mean==0:
-        snr = -1234
-    else:
-        snr = round(p_max/n_mean,2)
-    return snr
+a = '1234main'
 
-st = read('SC.AXI_20180101062906.BHZ.sac')
-tr = st[0]
-s = tr.stats.sac
-r_time = UTCDateTime(year=s.nzyear,julday=s.nzjday,hour=s.nzhour,minute=s.nzmin,second=s.nzsec,microsecond=s.nzmsec*1000) #参考时刻
-p_time = r_time+s.a#p波到时
+b = a.replace('12*','test')
 
-
-snr = cal_SNR(tr,p_time,10,3)
-print (snr)
-
+print (help(b.replace))
 
 
 

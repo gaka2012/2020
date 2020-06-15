@@ -1,4 +1,0 @@
-unsupported operand type(s) for -: 'float' and 'UTCDateTime'
-SC-AXI 2018-01-31T04:56:37.410000Z
-unsupported operand type(s) for -: 'float' and 'UTCDateTime'
-SC-AXI 2018-01-31T04:56:37.410000Z

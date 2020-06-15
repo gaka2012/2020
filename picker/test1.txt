@@ -1,0 +1,17 @@
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180104072045.BHZ.sac 2018-01-03T23:20:50.120000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180101062906.BHZ.sac 2017-12-31T22:29:09.200000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180105164734.BHZ.sac 2018-01-05T08:47:36.210000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180107125730.BHZ.sac 2018-01-07T04:57:33.590000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180104001929.BHZ.sac 2018-01-03T16:20:04.440000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180104103927.BHZ.sac 2018-01-04T02:39:29.640000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180111202226.BHZ.sac 2018-01-11T12:22:30.530000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180104192616.BHZ.sac 2018-01-04T11:26:30.170000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180107102552.BHZ.sac 2018-01-07T02:26:00.340000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180128161615.BHZ.sac 2018-01-28T08:16:40.020001Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180116160710.BHZ.sac 2018-01-16T08:07:14.230000Z
+/home/navyup/zzp/filterpicker/data/SC.AXI_20180104221703.BHZ.sac 2018-01-04T14:17:13.800000Z
+/home/navyup/zzp/filterpicker/no_data/SC.AXI_20180101225925.BHZ.sac -1234
+/home/navyup/zzp/filterpicker/no_data/SC.AXI_20180104072045.BHZ.sac -1234
+/home/navyup/zzp/filterpicker/no_data/SC.AXI_20180104103927.BHZ.sac -1234
+/home/navyup/zzp/filterpicker/no_data/SC.AXI_20180104162403.BHZ.sac -1234
+/home/navyup/zzp/filterpicker/no_data/SC.AXI_20180104001929.BHZ.sac -1234

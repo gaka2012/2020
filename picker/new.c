@@ -90,51 +90,18 @@ int main()
 
 
 #define e 2.71828      
-float cal_objective(int auto_pick,int m_pick,float d_list[],float t9)//计算目标函数，输入自动拾取的数量，手动拾取数量，时间差数组(与auto数量一致)，不确定性。
-{
-    float ob; //目标函数的值初始化为0
-    float base_num; // 底数
-    int i;
-    if ( auto_pick<=3 & m_pick==1 & auto_pick>0) //参考文献中的第一中情况，惩罚参数是3,找到最小值min_diff
-    {
-        //1.找到最小值
-        float min_diff=10;
-        for(i=0;i<auto_pick;i++) if (d_list[i]<min_diff) min_diff=d_list[i];
-        base_num = ((min_diff*min_diff)/(2*(t9*t9)))*(-1); 
-        ob = pow (e,base_num); 
-        //printf("newtest==%f\n",min_diff);
-    }
-    
-    else if (auto_pick>3 & m_pick==1)//第二种情况
-    {
-        float tem,sum_tem; 
-        for (i=0;i<auto_pick;i++)
-        {
-            base_num = (d_list[i]*d_list[i]/(2*(t9*t9)))*(-1);
-            tem      = pow(e,base_num);
-            sum_tem+= tem; 
-        }
-        ob = sum_tem/(1+auto_pick-1);
-    }
-    else if (auto_pick==0 & m_pick==1) ob=0;
-    else if (m_pick==0) 
-    {
-        ob=pow(1.0/(auto_pick+4),auto_pick+1); //第四种情况。
-    }
-    return ob;
-}
+
 
 
 int main()  
 {    
-    int a =4,i;
-    float b[a],test;
-    for (i=0;i<a;i++) b[i]=(i+0.2)*0.2;
-    for (i=0;i<a;i++) printf("%f\n",b[i]);
-    //test=cal_objective(2,0,b,2);
-    //printf("test == %f\n",test);
-    char c[5]="-1234";
-    if (strcmp(c,"-1234")==0)printf("char === %s\n",c);
+    float a=6.12,b=13.25;
+    float test=0.466;
+    test = (int)(100.0*test+0.5)/100.0;
+    printf("test == %f\n",test);
+    
+    
+    
     return 0;
 
 }

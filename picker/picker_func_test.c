@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
     //对读入到数组中的内容进行循环。
     for (i=0;i<34;i=i+2)
     {
-        printf("%s\n",file_num[i]); //print读入的文件名
+        //printf("%s\n",file_num[i]); //print读入的文件名
     
     //读取sac文件的绝对路径。
         if ((fp = fopen(file_num[i], "r")) == 0) {
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
     // get dt
         double dt = sachdr.DELTA;
         float *tt = sachdr.T;
-        printf("t9==%f\n",tt[9]);
+        //printf("t9==%f\n",tt[9]);
         if (DEBUG) printf("sachdr.DELTA: %f\n", sachdr.DELTA);
     //dt = dt < 0.02 ? 0.02 : dt;     // aviod too-small values for high sample rate data
     //改4. 原本的被注释了，重新改成了第2行。
@@ -120,8 +120,8 @@ int main(int argc, char *argv[]) {
         if (itUpEvent > 1)
             tUpEvent = (double) itUpEvent / 1000.0;
     //
-        printf("picker_func_test: filp_test filtw %f ltw %f thres1 %f thres2 %f tupevt %f res PICKS\n",
-                filterWindow, longTermWindow, threshold1, threshold2, tUpEvent);
+        //printf("picker_func_test: filp_test filtw %f ltw %f thres1 %f thres2 %f tupevt %f res PICKS\n",
+                //filterWindow, longTermWindow, threshold1, threshold2, tUpEvent);
 
 
 
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
                 &num_picks,
                 "TEST"
                 );
-        printf("picker_func_test: num_picks: %d\n", num_picks);
+        //printf("picker_func_test: num_picks: %d\n", num_picks);
 
     // create NLLOC_OBS picks
     // open pick file
@@ -228,15 +228,15 @@ int main(int argc, char *argv[]) {
         {
             //for (n = 0; n < num_picks; n++) printf("%f\n",d_list[n]);
             tem_ob = cal_objective(num_picks,1,d_list,tt[9]);
-            printf("tem_ob==%f\n",tem_ob);
+            //printf("tem_ob==%f\n",tem_ob);
         }
         else if (strcmp(file_num[i+1],"-1234")==0) //如果后缀是-1234,表明是噪声，则目标函数的第二个输入值是0,即Nm==0表示噪声。  
         {   
             tem_ob = cal_objective(num_picks,0,d_list,tt[9]);
-            printf("noise_tem_ob==%f\n",tem_ob);
+            //printf("noise_tem_ob==%f\n",tem_ob);
         }
         sum_ob+=tem_ob; //计算目标函数的和。
-        
+       
         // clean up
         fclose(fp);
         //free(pick_min);
@@ -248,7 +248,10 @@ int main(int argc, char *argv[]) {
         free_PickList(pick_list, num_picks);
         free(sample);
     }
-    printf("sum_ob==%f\n",sum_ob);
+    sum_ob = sum_ob/13.25; //计算真正的目标函数
+    sum_ob = (int)(sum_ob*100.0+0.5)/100.0; //目标函数保留2位小数。
+    //printf("sum_ob==%f\n",sum_ob);
+    printf("%f",sum_ob);
     return (0);
 
 }
@@ -286,7 +289,7 @@ float cal_objective(int auto_pick,int m_pick,float d_list[],float t9)//计算目
         float min_diff=10;
         for(i=0;i<auto_pick;i++) if (d_list[i]<min_diff) min_diff=d_list[i];
         base_num = ((min_diff*min_diff)/(2*(t9*t9)))*(-1); 
-        printf("base_num==%f %f\n",base_num,min_diff);
+        //printf("base_num==%f %f\n",base_num,min_diff);
         ob = pow (e,base_num); 
         //printf("newtest==%f\n",min_diff);
     }
