@@ -1,0 +1,347 @@
+#!/usr/bin/python
+# -*- coding:UTF-8 -*-
+
+import matplotlib.pyplot as plt
+#plt.switch_backend('agg')
+import numpy as np
+import random,sys,os,glob
+import subprocess
+ 
+ 
+# (-1, 2)
+# 初始化原始种群,输入种群的数量以及最大值，最小值。
+
+#格雷编码返回到二进制编码,输入一个格雷编码基因，返回一个二进制基因。
+def gray_decode(bin_num):
+    te_str = ''
+    an_point = int(bin_num[2])  #初始锚点是左边第一个基因。
+    for i in range(3,len(bin_num)):
+        te = an_point^int(bin_num[i]) #每次异或完后的基因作为新的锚点
+        an_point = te
+        te_str+= str(te)
+    return bin_num[0:3]+te_str
+
+#二进制吗到格雷编码，输入一个二进制基因，返回一个格雷编码。
+def gray_encode(bin_num):
+    te_str = ''
+    for i in range(len(bin_num)-1,2,-1):
+        te = int(bin_num[i])^int(bin_num[i-1])
+        te_str=''.join([str(te),te_str])
+    return bin_num[0:3]+ te_str         
+
+
+#初始化原始种群,输入种群的数量以及最大值，最小值。按照顺序生成数值。一开始会按最小最大值的顺序生成num个数，最后会打乱顺序。比如num=30,(1,10) 会生成3遍1-10,然后会打乱顺序。
+def num_popular(num,max_num,min_num):
+    popular = []
+    te = []
+    for i in range(min_num,max_num+1):
+        te.append(i)
+    j=0
+    #根据num的值，增加popular的数量。
+    for i in range(num):
+        if j>(len(te)-1):
+            j=0
+            x = te[j]
+        else :
+            x = te[j] 
+            x = round(x,2)
+        popular.append(x)
+        j+=1
+    random.shuffle(popular) #将顺序打乱，貌似能稍微好点。
+    return popular
+
+'''
+#def ori_popular(num,max_num,min_num): #原始初始化种群，在num_max和min之间产生num个随机数。
+    popular = []
+    for i in range(num):
+        x = random.randint(min_num, max_num)  # 在此范围内生成一个随机浮点数
+        x = round(x,2)
+        popular.append(x)
+    return popular
+'''
+# 编码，也就是由表现型到基因型，性征到染色体,将实数转换为二进制的数。
+def encode(gene_dict):
+    new_gene = {} #输入的是一个字典，键值是每一初始种群的最大、最小、以及基因长度，对应的值是其初始化后的n个x值，返回的只是把x值转换为了基因。
+    for key,value in gene_dict.items():
+        num_range = key[0]-key[1]
+        tem_ge = []
+        for i in range(0,len(value)): #把每一个x值转换为基因
+            data = int((value[i]-(key[1])) / num_range * (2**key[2]-1))  # 染色体序列为18bit，由于取值范围是[-1,2]，区间是3,如果保留4位有效数字，有3×10××4=3万个数。
+            bin_data = bin(data)
+            for j in range(len(bin_data)-2, key[2]):  # 序列长度不足补0
+                bin_data = bin_data[0:2] + '0' + bin_data[2:]
+            #tem_ge.append(bin_data) 
+            tem_ge.append(gray_encode(bin_data)) #格雷编码
+        new_gene[key] = tem_ge
+    return new_gene   
+
+ 
+# 解码，即适应度函数。通过基因，即染色体得到个体的适应度值,返回的fitness实际上是100个计算后的Y值。
+def decode(gene_dict):
+    x_list = [] #存储基因翻译过来的数值。列表中有列表，有几个参数，就有几个列表。
+    fitness= [] #存储适应度函数的结果，即n个y值。
+    #输入的参数是一个字典，键是是每一初始种群的最大、最小、以及基因长度，对应的值是其初始化后的n个x值对应的基因。
+    for key,value in gene_dict.items():
+        num_range = key[0]-key[1]
+        tem_list  = [] #存储每个参数对应的x值。
+        for ge in range(len(value)):
+            tempo_ge = gray_decode(value[ge])  #格雷解码
+            x = (int(tempo_ge,2) / (2**key[2]-1)) * num_range + key[1]  #将基因装换为数值
+            tem_list.append(x)
+        x_list.append(tem_list)
+    
+    #对输入的多个参数对应的x值求适应度函数,调用FP
+    program_path = '/home/navyup/zzp/filterpicker/program'  #程序所在的路径，需要先进入路径才运行    
+    input_data   = 'test.txt'                                         #.带入反演的数据名称 mer1.sac
+    out_file     = 'zday1.txt'  #生成的结果的文件夹
+    #tup1,t1,t2   = 39,3,3
+    for i in range(len(x_list[0])): #每个参数n个基因，数量是相同的。
+        #y_value = x_list[0][i]**2+x_list[1][i]*4 #函数y=x**2+3z
+        test    = subprocess.check_output('cd %s;./picker_func_test %s %s  %s %s %s %s %s' %(program_path,input_data,out_file,x_list[0][i],x_list[1][i],x_list[2][i],x_list[3][i],x_list[4][i]),shell=True)
+        #print (test,x_list[0][i],x_list[1][i])
+        
+        y_value = float(bytes.decode(test)) #FP的返回结果是二进制，转换成字符并转换成小数。就是目标函数的结果。
+        fitness.append(y_value)  
+    return fitness,x_list
+      
+
+def choice_ex(gene_dict,collect_max,fit_ave):
+    popular_new = {} #最后返回的字典，键值max、min、len ，值是交换后的n个基因。
+    
+    #将所有的初始基因放在一个列表下，方便后面的基因交换，节省时间。
+    value_list = []
+    key_list   = []
+    gene_len   = []
+    para_num   = 0 #看一下有几个参数
+    for key,value in gene_dict.items():
+        value_list.append(value)
+        key_list.append(key)
+        para_num+=1
+        gene_len.append(key[2])  #基因长度  
+    #求适应度函数的和
+    fitness = decode(gene_dict)[0]#输入的参数是原始基因字典，需要先解码。返回值是适应度函数y值本身
+    sum_fit_value = 0              #所有y值的和，由于是求最大值，适应度函数直接就是y值本身。所以这个实际上求的是所有适应度值的和。
+    for i in range(len(fitness)):
+        sum_fit_value += fitness[i]
+    # 各个个体被选择的概率
+    probability = []
+    for i in range(len(fitness)):  #每个个体被选择的概率是其本身的适应度除以总的适应度
+        probability.append(fitness[i]/sum_fit_value)
+
+    # 概率分布
+    probability_sum = []          #这个列表存储的是概率的和，最终的概率和是1.相当于染色体的累计概率
+    for i in range(len(fitness)):
+        if i == 0:
+            probability_sum.append(probability[i])
+        else:
+            probability_sum.append(probability_sum[i-1] + probability[i])
+            
+    #选择
+    tem_popular_new = [] #列表，存储基因交换后的基因,有几个参数就新建几个空的列表。
+    for i in range(para_num):
+        te = []
+        tem_popular_new.append(te)
+        
+    #print ('choice----',max(fitness),fitness.count(max(fitness)),collect_max)    
+    for i in range(int(len(fitness)/2)): #一共有100个原始数据，将其分成50组，每组2个原始数据，2个基因，然后生成2个随机数字(范围是0-1)
+                                         #看一下这2个数字的范围符合哪2个数据的概率分布，从而把这2个基因挑出来。
+        temp = [] #存储临时选出来的基因，有几个参数就选几个。
+        y1   = []
+        for n in range(para_num):
+            te = []
+            temp.append(te)
+            
+        for j in range(2):
+            rand = random.uniform(0, 1)  # 在0-1之间随机一个浮点数
+            for k in range(len(fitness)):#每一个数字都有一个累计概率，选出rand中的数字与哪个x值的累计概率项符合。
+                if k == 0:
+                    if rand < probability_sum[k]:
+                        y1.append(fitness[k])
+                        for m in range(para_num): #有m个参数，所以要把m个参数对应的基因都挑出来。
+                            temp[m].append(value_list[m][k])
+                else:
+                    if (rand > probability_sum[k-1]) and (rand < probability_sum[k]):
+                        y1.append(fitness[k])
+                        for m in range(para_num):
+                            temp[m].append(value_list[m][k])
+                            
+           
+        # 交叉，交叉几率根据公式来，每次挑出2个基因，找到y值大的那个数带入公式。
+        if (collect_max-fit_ave)==0: #防止商出现等于0的情况
+            division = 1
+        else:
+            division = collect_max-fit_ave
+        if max(y1)>=fit_ave:
+            k1 = (collect_max-max(y1))/division
+        else :
+            k1 = 0.5
+        is_change = random.uniform(0,1)
+        
+        
+        if is_change<k1:  #如果上一行的代码的结果是1,2就交叉，是0就不交叉，所以概率是 2/3=0.66
+            for h in range(len(temp)):
+                change_len=int(gene_len[h]/2)  #交换的基因的长度，如果是4,则交换其中的2个基因。注意基因的前2个是符号0b，不参与交换
+                temp_s = temp[h][0][1+change_len:1+change_len*2]
+                temp[h][0] = temp[h][0][0:1+change_len] + temp[h][1][1+change_len:1+change_len*2] + temp[h][0][1+change_len*2:]
+                temp[h][1] = temp[h][1][0:1+change_len] + temp_s + temp[h][1][1+change_len*2:] #基因总长度是18,交换其中的9-14,共计6个基
+        #这个列表返回交换基因后的基因，以列表的形式存在，要重新变成字典形式。
+        for a in range(para_num):
+            tem_popular_new[a].append(temp[a][0])
+            tem_popular_new[a].append(temp[a][1])
+            
+    popular_new = dict(zip(key_list,tem_popular_new))
+    return popular_new
+
+def variation(gene_dict,collect_max,fit_ave):
+    fitness = decode(gene_dict)[0]  
+    
+    gene_num = len(list(gene_dict.values())[0]) #字典中的值的长度。
+    for i in range(gene_num):
+        #计算变异率
+        y1 = fitness[i]
+        if (collect_max-fit_ave)==0: #防止商出现等于0的情况
+            division = 1
+        else:
+            division = collect_max-fit_ave
+            
+        if y1>=fit_ave:
+            k2 = (collect_max-y1)/division
+        else:
+            k2 = 0.5    
+        if k2 ==0:
+            k2 = 0.005    #如果正好是最大值，则k2=0,这个时候应该给予一个默认的突变值。
+    
+        is_variation = random.uniform(0,1)
+        if is_variation < k2:
+            for key,value in gene_dict.items():
+                gene_len = key[2]
+                rand = random.randint(2,gene_len) #变异，实际上就是对基因2-18中的某一个基因变成0或1,不包括2,gene_len+1
+                if value[i][rand] == '0':
+                    value[i] = value[i][0:rand] + '1' + value[i][rand+1:]
+                else:
+                    value[i] = value[i][0:rand] + '0' + value[i][rand+1:]
+    return gene_dict        
+ 
+#需要修改的参数：
+#(1)num=100; 初始化的取值数量，比如求[-1,2]区间y=x**2的最大值，随机取100个x值;注意在第一步的子函数中修改取值范围。
+#(2)第二步，注意修改子函数中的基因长度， 
+#(3)第三步，首先要解码，注意更改解码公式，以及函数公式。
+if __name__ == '__main__':  # alt+enter
+    # 第一步：初始化原始种群, 多个参数，每个参数都有4个变量，个体数目，取值的最大值，最小值,基因的长度。初始长度要保持一致，最大最小值不能一样。    
+    multi_para = [[2000,1033,10,10],[2000,1323,300,10],[2000,68,5,6],[2000,69,6,6],[2000,70,7,6]]
+    
+    #初始化适应度最大及均值
+    fit_max,fit_ave = 0,0  #适应度最大值以及平均值。
+    collect_max     = 1    #适应度历史最大值
+    
+    
+    #返回的原始种群ori_popular是一个字典，里面的键值是每一初始种群的最大、最小、以及基因长度，对应的值是其初始化后的n个x值。
+    ori_popular = {}
+    for i in multi_para:
+        tem_popular = num_popular(i[0],i[1],i[2])
+        ori_popular[i[1],i[2],i[3]] = tem_popular
+    
+    '''
+    #测试，输出原始分配的2个参数的值范围，以及值，
+    for key,value in ori_popular.items():
+        print (key)
+        #print (value)
+    #测试，输入得到的适应度函数，以及基因转换后的x值。
+    ori_popular = encode(ori_popular)
+    test_fit = decode(ori_popular)[0]
+    test_x   = decode(ori_popular)[1]
+    print()
+    print('fitfunction==',test_fit)
+    print ()
+    for i in range(len(test_x)):
+        print ('the %sst parameter =='%i,test_x[i])  
+        print ()
+    '''
+    
+    # 第二步：得到原始种群的基因，返回一个列表，里面是100个随机数对应的基因。
+    ori_popular_gene = encode(ori_popular)  #返回的ori_popular_gene是一个字典，键是[max,min,基因长度]，对应的值是n个基因
+    new_popular_gene = ori_popular_gene
+
+    #计算第一次适应度最大及均值
+    fit_first     = decode(new_popular_gene)[0] #得到适应度列表
+    
+    
+    sum_fit_first = 0
+    for j in fit_first:
+        sum_fit_first +=j
+    fit_max = max(fit_first) #第一次y最大值
+    fit_ave = sum_fit_first/len(fit_first) #第一次y均值
+
+    #进行迭代
+    all_x = [] #存储所有的x值。
+    y = []
+    
+    bar_num=0
+    total  =500
+    for i in range(500):  # 迭代次数。繁殖1000代
+        #进度条
+        bar_num+=1
+        percent=bar_num/total #用于写进度条
+        sys.stdout.write("\r{0}{1}".format("#"*10 , '%.2f%%' % (percent * 100)))
+        sys.stdout.flush()
+        
+        #找到适应度历史最大值
+        if fit_max>=collect_max:
+            collect_max = fit_max
+        
+        #print('max-ave====',fit_max,fit_ave)
+        new_popular_gene = choice_ex(new_popular_gene,collect_max,fit_ave)  # 第三步：选择和交叉,输入的是一个编码后的基因字典，输出的是一个交叉后的基因字典。
+        
+        #测试
+#        test_x = decode(new_popular_gene)[0]
+#        max_x  = max(test_x)
+#        print ('测试',max_x,test_x.count(max_x))
+        
+        new_popular_gene = variation(new_popular_gene,collect_max,fit_ave)  # 变异,输入的是一个选择交叉后的基因字典，输出的是一个变异后的字典.
+        
+        
+        # new_fitness是一个列表，存储每个x值对应的y值，对这些y值求和，然后处以y值的数量，得到平均y值。
+        new_fitness = decode(new_popular_gene)[0]
+        
+        #每次迭代后剩下的x值会越来越向着最佳x值逼近，new_x存储每次迭代后的x值列表。
+        new_x = decode(new_popular_gene)[1]#存储基因翻译过来的数值。列表中有列表，有几个参数，就有几个列表
+        #print (new_fitness)
+        #print (new_x)
+        all_x.append(new_x)
+        
+        #求每次迭代后的y值的平均值。
+        sum_new_fitness = 0
+        for j in new_fitness:
+            sum_new_fitness += j
+        y.append(sum_new_fitness/len(new_fitness)) #每次迭代都能得到一个平均y值，
+        
+        #更新适应度最大和均值
+        fit_max = max(new_fitness)
+        fit_ave = sum_new_fitness/len(new_fitness)
+
+       
+    print()
+    print (collect_max) #这个是单个基因组成的最大值，下面的max_y是y值的平均值的最大值，如果这2个数不一致，通常说明单个基因最大值没有被保存下来。原因是
+    #找到最大的目标函数值，看看有几个。
+    max_y = max(y)
+    m = 0
+    
+    for j in range(len(y)):
+        if y[j]==max_y:
+            m+=1
+            fc= open('max_x.txt','a+')
+            fc.write(str(all_x[j]))
+            fc.write('\n')
+            fc.close()    
+    print('there are %s max_y and it is %s'%(m,max_y))
+
+    # 画图 #横坐标是迭代次数，纵坐标是y值。
+    x = np.linspace(0, 500, 500)
+    fig = plt.figure(figsize=(25,15))  # 相当于一个画板
+    axis = fig.add_subplot(111)  # 坐标轴
+    plt.tick_params(labelsize=23)
+    axis.plot(x, y)
+    plt.savefig('two_gray_adaptive')
+    #plt.show()
+    plt.close()
+
