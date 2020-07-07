@@ -25,16 +25,16 @@ for data in data_list:
     snr      = float(s[2])
     
     print (snr)
-    '''
+
     #将信噪比转换为不确定性。
     if snr<8:
-        un = 0.5-(0.3/8*snr)
+        un = 0.5-(0.2/8*snr)
     elif  8<=snr<16:
-        un = 0.2-(0.1/8*(snr-8)) 
+        un = 0.3-(0.1/8*(snr-8)) 
     elif  16<=snr<24:
-        un = 0.1-(0.05/8*(snr-16))
+        un = 0.2-(0.1/8*(snr-16))
     elif snr>=24:
-        un = 0.05
+        un = 0.1
     un = round(un,2)
     
     #将数据复制到新的路径下，并修改t9,将不确定性写入t9
@@ -44,7 +44,7 @@ for data in data_list:
     st+= read(sac_name)
     st[0].stats.sac.t9 = un
     st[0].write(sac_name,format='SAC')
-    '''
+    
     
 '''
 #读取(data)中的数据路径以及p波到时写入txt文件中。
@@ -63,7 +63,7 @@ for sac in sac_list:
     fa.close()
 '''
     
-    
+'''
  #读取(no_data)中的噪声数据路径以及-1234写入txt文件中。
 data_path = '/home/zhangzhipeng/software/github/2020/program/no_data'
 sac_list  = glob.glob(data_path+'/*.sac')
@@ -74,7 +74,9 @@ for sac in sac_list:
     fa.close()   
     
     
-    
+'''
+
+  
     
     
     
