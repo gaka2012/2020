@@ -292,14 +292,20 @@ def getVProjection(image):
                 w_[x]+=1
     #绘制垂直平投影图像
     for x in range(w):
-        for y in range(h-w_[x],h):
+        for y in range(h-w_[x],h):  #这种表达方式使得纵向从底向上显示。
             vProjection[y,x] = 255
     #cv2.imshow('vProjection',vProjection)
+    cv2.imwrite('VProjection.png',vProjection)
     return w_
  
+ 
+ 
+
 if __name__ == "__main__":
+
+    
     #读入原始图像
-    origineImage = cv2.imread('test1.png')
+    origineImage = cv2.imread('1111.png')  #(232, 1117, 3)
     # 图像灰度化   
     #image = cv2.imread('test.jpg',0)
     image = cv2.cvtColor(origineImage,cv2.COLOR_BGR2GRAY)
@@ -312,49 +318,140 @@ if __name__ == "__main__":
     #图像高与宽
     (h,w)=img.shape
     Position = []
-    #水平投影
-    H = getHProjection(img)
- 
- 
-    '''
+    #垂直投影
+    V = getVProjection(img) #[227, 224, 189,分界线大约是180左右。
+    #print (V)
+
+    
     start = 0
-    H_Start = []
+    V_Start = [] #理论上一个start搭配一个end，但是也有最后一个start可能没有搭配的end
+    V_End = []
+    #根据垂直投影获取垂直分割位置，存储在V_start和V_end中。
+    for i in range(len(V)):
+        if V[i] > 0 and start ==0: #第一个判断是一个阈值，设定起始点，当白色点数值大于？时将其视为分割的起点。
+            V_Start.append(i)
+            start = 1
+        if V[i] < 1 and start == 1: #第一个判断是结束阈值，设为终点，当白色点数值小于？时，将其视为分割的终点。
+            V_End.append(i)
+            start = 0
+            
+    for i in range(len(V_End)):
+        cut_img = origineImage[0:h,V_Start[i]:V_End[i]]        
+        cv2.imwrite('{}.png'.format(i),cut_img)
+    #cut_img = img0[33:265,337:1454] #取出图像，注意仍然是先高度，再宽度，和其原始的shape是一样的。   
+    
+    
+    
+      
+    '''
+    #以下程序将图片分割成上下2部分
+    
+    #读入原始图像
+    origineImage = cv2.imread('3.png')
+    # 图像灰度化   
+    #image = cv2.imread('test.jpg',0)
+    image = cv2.cvtColor(origineImage,cv2.COLOR_BGR2GRAY)
+        
+    # 将图片二值化,自适应二值化效果好很多。
+    #retval, img = cv2.threshold(image,170,255,cv2.THRESH_BINARY) 
+    img = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,117,8)
+    #cv2.imwrite('binary.png',img)
+    
+    #图像高与宽
+    (h,w)=img.shape
+    Position = []
+    #垂直投影
+    
+    H = getHProjection(img) #水平投影。
+
+    start = 0
+    H_Start = [] #理论上一个start搭配一个end，但是也有最后一个start可能没有搭配的end
     H_End = []
-    #根据水平投影获取垂直分割位置
+    #根据垂直投影获取垂直分割位置，存储在V_start和V_end中。
     for i in range(len(H)):
-        if H[i] > 0 and start ==0:
+        if H[i] > 0 and start ==0: #第一个判断是一个阈值，设定起始点，当白色点数值大于？时将其视为分割的起点。
             H_Start.append(i)
             start = 1
-        if H[i] <= 0 and start == 1:
+        if H[i] < 1 and start == 1: #第一个判断是结束阈值，设为终点，当白色点数值小于？时，将其视为分割的终点。
             H_End.append(i)
             start = 0
+            
+    for i in range(len(H_End)):
+        cut_img = origineImage[H_Start[i]:H_End[i],0:w]        
+        cv2.imwrite('{}.png'.format(i),cut_img)
+    #cut_img = img0[33:265,337:1454] #取出图像，注意仍然是先高度，再宽度，和其原始的shape是一样的。 
+    
+    '''
+
+    #以下程序将图片分割成左右2部分。
+    '''
+    #读入原始图像
+    origineImage = cv2.imread('test1.png')  #(232, 1117, 3)
+    # 图像灰度化   
+    #image = cv2.imread('test.jpg',0)
+    image = cv2.cvtColor(origineImage,cv2.COLOR_BGR2GRAY)
+        
+    # 将图片二值化,自适应二值化效果好很多。
+    #retval, img = cv2.threshold(image,170,255,cv2.THRESH_BINARY) 
+    img = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,117,8)
+    #cv2.imwrite('binary.png',img)
+    
+    #图像高与宽
+    (h,w)=img.shape
+    Position = []
+    #垂直投影
+    V = getVProjection(img) #[227, 224, 189,分界线大约是180左右。
+ 
+    
+    start = 0
+    V_Start = [] #理论上一个start搭配一个end，但是也有最后一个start可能没有搭配的end
+    V_End = []
+    #根据垂直投影获取垂直分割位置，存储在V_start和V_end中。
+    for i in range(len(V)):
+        if V[i] > 170 and start ==0: #第一个判断是一个阈值，设定起始点，当白色点数值大于？时将其视为分割的起点。
+            V_Start.append(i)
+            start = 1
+        if V[i] < 170 and start == 1: #第一个判断是结束阈值，设为终点，当白色点数值小于？时，将其视为分割的终点。
+            V_End.append(i)
+            start = 0
+            
+    for i in range(2):
+        cut_img = origineImage[0:h,V_End[i]:V_Start[i+1]]        
+        cv2.imwrite('{}.png'.format(i),cut_img)
+    #cut_img = img0[33:265,337:1454] #取出图像，注意仍然是先高度，再宽度，和其原始的shape是一样的。         
+    '''
+            
+            
+    '''        
     #分割行，分割之后再进行列分割并保存分割位置
     for i in range(len(H_Start)):
         #获取行图像
-        cropImg = img[H_Start[i]:H_End[i], 0:w]
+        cropImg = img[H_Start[i]:H_End[i], 0:w]  #对二值化后的图片分割，先分割行或列，再分割列或行。
         #cv2.imshow('cropImg',cropImg)
-        #对行图像进行垂直投影
+        
+        #对切割后的图像进行垂直投影，返回与宽度一致的列表。
         W = getVProjection(cropImg)
         Wstart = 0
         Wend = 0
         W_Start = 0
         W_End = 0
         for j in range(len(W)):
-            if W[j] > 0 and Wstart ==0:
+            if W[j] > 0 and Wstart ==0:  #第一个判断是一个阈值，设定起始点，当白色点数值大于？时将其视为分割的起点。
                 W_Start =j
                 Wstart = 1
                 Wend=0
-            if W[j] <= 0 and Wstart == 1:
+            if W[j] <= 0 and Wstart == 1:   #第一个判断是结束阈值，设为终点，当白色点数值小于？时，将其视为分割的终点。
                 W_End =j
                 Wstart = 0
-                Wend=1
+                Wend=1                      #当有一个终点时，即有一个完整的开始和结束，Wend=1
             if Wend == 1:
                 Position.append([W_Start,H_Start[i],W_End,H_End[i]])
                 Wend =0
+                
     #根据确定的位置分割字符
-    for m in range(len(Position)):
-        cv2.rectangle(origineImage, (Position[m][0],Position[m][1]), (Position[m][2],Position[m][3]), (0 ,229 ,238), 1)
-    cv2.imshow('image',origineImage)
+    for m in range(len(Position)):  
+        cv2.rectangle(origineImage, (Position[m][0],Position[m][1]), (Position[m][2],Position[m][3]), (0 ,229 ,238), 1) #在原始彩图上画矩形框，输入左上、右下、颜色、宽度。
+    cv2.imshow('image',origineImage)                                                                                    #貌似是先宽度再高度。
     cv2.waitKey(0)
     '''
 
