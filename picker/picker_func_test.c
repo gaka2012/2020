@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     double t0;
     double filterWindow;
     double longTermWindow;
-    char file_num[34][256]; //二维数组，第一个是数组的大小，第二个是每个组的内容大小。用来读取txt文件中的内容，每行需要2个数组，一个存放路径，一个存放拾取到时。
+    char file_num[200][256]; //二维数组，第一个是数组的大小，第二个是每个组的内容大小。用来读取txt文件中的内容，每行需要2个数组，一个存放路径，一个存放拾取到时。
     int  i;
     FILE *fp1;
     
@@ -56,12 +56,12 @@ int main(int argc, char *argv[]) {
     
     //打开txt文件，将txt中的内容输出到字符串数组中。txt每行内容有2部分，占用2个数组。
     fp1 = fopen(argv[1],"r"); 
-    for (i=0;i<34;i++)
+    for (i=0;i<200;i++)
         fscanf(fp1,"%s",file_num[i]);
     fclose(fp1);
     
     //对读入到数组中的内容进行循环。
-    for (i=0;i<34;i=i+2)
+    for (i=0;i<200;i=i+2)
     {
         //printf("%s\n",file_num[i]); //print读入的文件名
     
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
         free_PickList(pick_list, num_picks);
         free(sample);
     }
-    sum_ob = sum_ob/13.25; //计算真正的目标函数
+    sum_ob = sum_ob/77.5; //计算真正的目标函数
     sum_ob = (int)(sum_ob*100.0+0.5)/100.0; //目标函数保留2位小数。
     //printf("sum_ob==%f\n",sum_ob);
     printf("%f",sum_ob);
