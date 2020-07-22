@@ -29,7 +29,7 @@ test_images = test_images / 255.0
 #建立模型，3层结构
 model = keras.Sequential([
     keras.layers.Flatten(input_shape=(28, 28)),    #将28,28的数据展开成一维
-    keras.layers.Dense(128, activation='relu'),    #隐藏层的结构，128个神经元，激活函数是relu
+    keras.layers.Dense(128, activation='relu'),    #隐藏层的结构，128个神经元，激活函数是relu,全连接层。
     keras.layers.Dense(10)                         #第三层结构，输出10个数
 ])
 
