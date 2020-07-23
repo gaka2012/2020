@@ -38,9 +38,80 @@ def create_model():
 
   return model
 
+'''
 # 创建一个基本的模型实例
 model = create_model()
 
 # 显示模型的结构
 model.summary()
+
+
+#创建回调路径
+checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/w&b/cp.ckpt"
+checkpoint_dir = os.path.dirname(checkpoint_path)
+
+
+
+# 创建一个保存模型权重的回调
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                 save_weights_only=True,
+                                                 verbose=1)
+
+#使用新的回调训练模型
+model.fit(train_images, 
+          train_labels,  
+          epochs=10,
+          validation_data=(test_images,test_labels), #指定验证数据
+          callbacks=[cp_callback])  # 通过回调训练
+
+
+
+#到此为止，上面的程序每个epoch会显示三行，第一行是实际的训练，第二行是saving model，第三行是测试数据集的准确度。
+'''
+
+
+# 创建一个基本模型实例
+model = create_model()
+
+# 评估模型
+loss, acc = model.evaluate(test_images,  test_labels, verbose=2)
+print("Untrained model, accuracy: {:5.2f}%".format(100*acc))
+
+
+
+checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/w&b
+# 加载权重
+model.load_weights(checkpoint_path)
+
+# 重新评估模型
+loss,acc = model.evaluate(test_images,  test_labels, verbose=2)
+print("Restored model, accuracy: {:5.2f}%".format(100*acc))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
