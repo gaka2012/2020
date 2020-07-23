@@ -12,7 +12,7 @@ from tensorflow import keras
 print(tf.version.VERSION)
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #忽略弹出的警告。
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+#os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"  #忘记为啥加这句话了，但是加上之后保存加载模型会出现bug，下次不用了。
 
 #得到数据，mnist中的前1000个数据(节省时间),将数据重新组合成784个，并归一化。
 (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data() #(60000,28,28),(60000,)  这个数据格式基本与mnist数据格式一样
@@ -47,7 +47,7 @@ model.summary()
 
 
 #创建回调路径
-checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/w&b/cp.ckpt"
+checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/b/test.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 
 
@@ -69,8 +69,8 @@ model.fit(train_images,
 #到此为止，上面的程序每个epoch会显示三行，第一行是实际的训练，第二行是saving model，第三行是测试数据集的准确度。
 '''
 
-
-# 创建一个基本模型实例
+'''
+# 创建一个随机的初始化的模型
 model = create_model()
 
 # 评估模型
@@ -79,20 +79,62 @@ print("Untrained model, accuracy: {:5.2f}%".format(100*acc))
 
 
 
-checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/w&b
-# 加载权重
+checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/b/test.ckpt"
+# 加载权重，默认加载最后一次的权重？
 model.load_weights(checkpoint_path)
 
 # 重新评估模型
 loss,acc = model.evaluate(test_images,  test_labels, verbose=2)
 print("Restored model, accuracy: {:5.2f}%".format(100*acc))
+'''
 
 
 
+'''
+#每隔5个epoch就保存一个模型，很神奇的是，先定义路径，并且可以用str.format模式，但是单独使用这种格式却不行，不知道为啥。
+checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/w/cp-{epoch:04d}.ckpt"
+checkpoint_dir = os.path.dirname(checkpoint_path)
+
+# 创建一个回调，每 5 个 epochs 保存模型的权重
+cp_callback = tf.keras.callbacks.ModelCheckpoint(
+    filepath=checkpoint_path, 
+    verbose=1, 
+    save_weights_only=True,
+    period=5)
+
+# 创建一个新的模型实例
+model = create_model()
+
+# 使用 `checkpoint_path` 格式保存权重
+model.save_weights(checkpoint_path.format(epoch=0))
+
+# 使用新的回调训练模型
+model.fit(train_images, 
+          train_labels,
+          epochs=50, 
+          callbacks=[cp_callback],
+          validation_data=(test_images,test_labels),
+          verbose=0)
+
+'''
+
+
+# 创建一个随机的初始化的模型
+model = create_model()
+
+# 评估模型
+loss, acc = model.evaluate(test_images,  test_labels, verbose=2)
+print("Untrained model, accuracy: {:5.2f}%".format(100*acc))
 
 
 
+checkpoint_path = "/home/zhangzhipeng/software/github/2020/ai_program/keras_test/w/cp-0000.ckpt"
+# 加载权重，默认加载最后一次的权重？
+model.load_weights(checkpoint_path)
 
+# 重新评估模型
+loss,acc = model.evaluate(test_images,  test_labels, verbose=2)
+print("Restored model, accuracy: {:5.2f}%".format(100*acc))
 
 
 
