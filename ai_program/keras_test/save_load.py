@@ -118,7 +118,7 @@ model.fit(train_images,
 
 '''
 
-
+'''
 # 创建一个随机的初始化的模型
 model = create_model()
 
@@ -135,6 +135,70 @@ model.load_weights(checkpoint_path)
 # 重新评估模型
 loss,acc = model.evaluate(test_images,  test_labels, verbose=2)
 print("Restored model, accuracy: {:5.2f}%".format(100*acc))
+'''
+
+
+
+#3.1 以下开始测试保存整个模型
+
+'''
+# 创建并训练一个新的模型实例。
+model = create_model()
+model.fit(train_images, train_labels, epochs=5)
+
+# 将整个模型另存为 SavedModel。
+#!mkdir -p saved_model
+model.save('my_model.h5') 
+'''
+
+#3.1.2读取保存的完整模型
+new_model = tf.keras.models.load_model('my_model.h5')
+
+# 检查其架构
+new_model.summary()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
