@@ -144,12 +144,12 @@ print("Restored model, accuracy: {:5.2f}%".format(100*acc))
 '''
 # 创建并训练一个新的模型实例。
 model = create_model()
-model.fit(train_images, train_labels, epochs=5)
+model.fit(train_images, train_labels, epochs=5)  #迭代5次，
 
 # 将整个模型另存为 SavedModel。
 #!mkdir -p saved_model
 model.save('my_model.h5') 
-'''
+
 
 #3.1.2读取保存的完整模型
 new_model = tf.keras.models.load_model('my_model.h5')
@@ -157,6 +157,14 @@ new_model = tf.keras.models.load_model('my_model.h5')
 # 检查其架构
 new_model.summary()
 
+
+# 3.1.3评估还原的模型
+loss, acc = new_model.evaluate(test_images,  test_labels, verbose=2)
+
+print('Restored model, accuracy: {:5.2f}%'.format(100*acc))
+print(new_model.predict(test_images).shape)
+
+'''
 
 
 
