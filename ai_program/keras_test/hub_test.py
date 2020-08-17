@@ -2,7 +2,7 @@
 # -*- coding:UTF-8 -*-
 
 import numpy as np
-import os
+import os,functools
 import tensorflow as tf
 import tensorflow_hub as hub
 import tensorflow_datasets as tfds
@@ -12,6 +12,48 @@ import pandas as pd
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #忽略弹出的警告。
 print(tf.version.VERSION)                #查看版本
 #二、加载和预处理数据
+
+#2.1 csv数据
+
+#1.1 下载csv格式的数据
+TRAIN_DATA_URL = "https://storage.googleapis.com/tf-datasets/titanic/train.csv"
+TEST_DATA_URL = "https://storage.googleapis.com/tf-datasets/titanic/eval.csv"
+
+train_file_path = tf.keras.utils.get_file("train.csv", TRAIN_DATA_URL)
+test_file_path = tf.keras.utils.get_file("eval.csv", TEST_DATA_URL)
+
+
+# 让 numpy 数据更易读。
+np.set_printoptions(precision=3, suppress=True) #保留3位小数，过小的数据会被压缩。
+
+
+
+
+def get_dataset(file_path):
+  dataset = tf.data.experimental.make_csv_dataset(
+      file_path,
+      batch_size=12, # 为了示例更容易展示，手动设置较小的值
+      label_name=LABEL_COLUMN,
+      na_value="?",
+      num_epochs=1,
+      ignore_errors=True)
+  return dataset
+
+raw_train_data = get_dataset(train_file_path)
+raw_test_data = get_dataset(test_file_path)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #2.2 Numpy数据(先下载mnist数据)
 '''
@@ -60,7 +102,7 @@ model.evaluate(test_dataset)
 '''
 
 
-
+'''
 #三、Estimator
 
 #3.1 预创建的Estimator
@@ -121,6 +163,7 @@ classifier = tf.estimator.DNNClassifier(
 classifier.train(
     input_fn=lambda: input_fn(train, train_y, training=True),
     steps=5000)
+'''
 
 
 
