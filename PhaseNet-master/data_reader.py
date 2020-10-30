@@ -148,6 +148,7 @@ class DataReader(object):
     return 0
 
   def start_threads(self, sess, n_threads=8):
+    print ('this is a test')
     for i in range(n_threads):
       thread = threading.Thread(target=self.thread_main, args=(sess, n_threads, i))
       thread.daemon = True
@@ -314,13 +315,13 @@ class DataReader_pred(DataReader):
                                         self.fname_placeholder: fname})
 
 
-class DataReader_mseed(DataReader):
+class DataReader_mseed(DataReader):  #首先调用这个类
 
   def __init__(self,
-               data_dir,
-               data_list,
-               queue_size,
-               coord,
+               data_dir,             #mseed/
+               data_list,            #fname.txt
+               queue_size,           #20
+               coord,                #None
                input_length=3000,
                config=Config()):
     self.config = config
