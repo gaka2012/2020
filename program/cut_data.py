@@ -59,7 +59,7 @@ def cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,n
     #print (S_phase,type(S_phase))
     if S_phase=='-1234':
         s.t0 = -1234
-        print ('PASS')
+        print ('no s arrive time')
     else:
         s.t0 = S_time-8*3600-ot
     
@@ -70,7 +70,8 @@ def cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,n
     nhour,nmin,nsec   = ntime.split(':')
     nsec = nsec.split('.')[0]
     nout =''.join([nyear,nmonth,nday,nhour,nmin,nsec])#20190101120001
-    data_name = net+'.'+sta+'_'+nout+'.'+tr.stats.channel+'_noise.sac'  #如果是噪声则用这个命名
+    #data_name = net+'.'+sta+'_'+nout+'.'+tr.stats.channel+'_noise.sac'  #如果是噪声则用这个命名
+    data_name = net+'.'+sta+'_'+nout+'.'+tr.stats.channel+'.sac'
     data.write(data_name,format='SAC')
     #将数据移动到位置
     os.system('mv *.sac %s'%(save_data))
@@ -176,24 +177,24 @@ def plot_num_distribution(num_list,fig_name,divnum,max_x,xlab,ylab): #画不同�
     plt.close()
     
 
-data_path = '/home/zhangzhipeng/datatest'  #存放原始数据的位置，下一级目录是SC
+data_path = '/home/zhangzhipeng/data'  #存放等待被切割的数据的位置，下一级目录是SC
 #data_path = '/bashi_fs/centos_data/sac_sc'
 
 #
 
 dict_test  = True  #输出字典内容
 mag_distri = False  #画震级分布图
-cut        = False  #截取数据,并计算信噪比，要自己输入p波和噪声的时间长度，计算完后存放在t9中。
+cut        = True  #截取数据,并计算信噪比，要自己输入p波和噪声的时间长度，计算完后存放在t9中。
 p_s_diff   = False   #震中距分布图。
 
-save_data = '/home/zhangzhipeng/software/github/2020/program/test' #截取后的数据保存位置
+save_data = '/home/zhangzhipeng/data/cuted_data' #截取后的数据保存位置
 
-cut_pro,cut_end   = 120,0     #以P波为基准，提前30s，延后60s进行截取
-phase_list   = ['Pg','Pn','P','Pb'] #截取P波震相
+cut_pro,cut_end   = 15,15     #以P波为基准，提前30s，延后60s进行截取
+phase_list   = ['Pg','Pn','P','Pb'] #截取P波震相，只要这几个震相，其他的P波震相不要。
 s_phase_list = ['Sg','S','Sn']  #截取S波震相
 
 #首先输入数据调用class类，共4个数据。寻到符合台网-台站以及震相列表的地震手动拾取。
-report_path  = '/home/zhangzhipeng/report-temporary' #存放震相报告的路径
+report_path  = '/home/zhangzhipeng/data/phase_report' #存放震相报告的路径
 file_list    = ['2018-01.txt']
 #file_list    = ['2018-01.txt','2018-02.txt','2018-03.txt','2018-04.txt','2018-05.txt','2018-06.txt','2018-07.txt','2018-08.txt','2018-09.txt','2018-10.txt','2018-11.txt','2018-12.txt',] 
 #sta_list  = ['AXI']
@@ -231,7 +232,7 @@ if __name__=="__main__":
                         tem_list = [-1234]
                     else:
                         tem_list = [key.eq_ot]
-                    eq_list  = [key.epi_lat,key.epi_lon,key.epi_dep,key.mag_value,value[i].Distance,value[i].azi] #防止是空
+                    eq_list  = [key.epi_lat,key.epi_lon,key.epi_dep,key.mag_value,value[i].Distance,value[i].azi] #这一行以及下面的for循环是为了防止某些信息是空的。
                     for num in eq_list:
                         try:
                             tem_list.append(float(num))
@@ -268,10 +269,10 @@ if __name__=="__main__":
                     sta_pha_time.setdefault(net_sta,[]).append(tem_list)
                 
     #测试，输出字典中的内容
-    if dict_test:
+    if dict_test: #只是一个判断，是否进行下面的操作
         for key,value in sta_pha_time.items(): #输出一个字典，键值是台网-台站，
                                        #对应的值是发震时间(str)、纬度(float)、经度、深度、震级、震中距、方位角、震级类型
-                                       #P波震相和到时(UTC)以及S波震相和到时，北京时间，要减去8个小时。
+                                       #P波震相和到时(UTC格式的数据类型)以及S波震相和到时，北京时间。
                 
             print (key)
             for i in value:
@@ -352,7 +353,7 @@ if __name__=="__main__":
                         
                         #读取三分量中实际数据的通道名称，看是否是3分量，有时可能是三个BHE分量。
                         c_name = [tr.stats.channel for tr in st] #['BHE', 'BHZ', 'BHN'] 
-                        c_name = '_'.join(c_name)
+                        #c_name = '_'.join(c_name)
                         if 'BHE' not in c_name or 'BHN' not in c_name or  'BHZ' not in c_name:
                             print('sac channel is missed', gdata)
                         
@@ -365,8 +366,9 @@ if __name__=="__main__":
                                 #对3分量文件分别进行截取，防止某个通道的时间不够，需要merge
                                 #print (gdata)
                                 for tr in st:
-                                    num_r+=1
-                                    cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
+                                    num_r+=1                                               
+                                    cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,
+                                              e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
                                     
                             #截取的时间 stat-30在，end不在
                             elif (gt-cut_pro)>=nor_time and (gt+cut_end)>nor_end:
@@ -389,13 +391,15 @@ if __name__=="__main__":
                                         st_c.append(tem_st[i])
                                         st_c.sort(['starttime'])
                                         st_c.merge(method=1,interpolation_samples=0,fill_value=0)
-                                        cut_trace(st_c[0],gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
+                                        cut_trace(st_c[0],gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,
+                                                  e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
                                 except IndexError:
                                     num_r-=1
                                     print ('no such data',gdata)
                                     for tr in st:
                                         num_r+=1
-                                        cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
+                                        cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,
+                                                  e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
                             #截取的时间 start-30不在，end在
                             elif  (gt-cut_pro)<nor_time and (gt+cut_end)<=nor_end:
                                 try:
@@ -418,14 +422,16 @@ if __name__=="__main__":
                                         st_c.sort(['starttime'])
                                         st_c.merge(method=1,interpolation_samples=0,fill_value=0)
                                         #save_data1 = '/home/zhangzhipeng/software/github/2020/program/sac_data1'
-                                        cut_trace(st_c[0],gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
+                                        cut_trace(st_c[0],gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,
+                                                  e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
                                 #找前一天的数据可能没有此数据，会出现IndexError错误,此时强行补零截取
                                 except IndexError:
                                     num_r-=1
                                     print ('no such data',gdata)
                                     for tr in st:
                                         num_r+=1
-                                        cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
+                                        cut_trace(tr,gt,cut_pro,cut_end,e_time,e_lat,e_lon,e_dep,
+                                                  e_mag,e_dis,e_azi,net,sta,S_phase,S_time,save_data)
                                 
             except Exception as e : #所有异常，输出到文件中
                 print ('test')

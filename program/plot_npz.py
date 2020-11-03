@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 
 #1.2 读取
-name_path = '/bashi_fs/centos_data/npz_sc_90s/2018test/*.npz' #存放npz数据的目录
+name_path = '/home/zhangzhipeng/data/npz_data/*.npz' #存放npz数据的目录
 name_file = glob.glob(name_path)
 
 #对npz文件画图，输入保存路径、3分量数据、tp、ts
@@ -38,3 +38,8 @@ for name in name_file:
     fig_path   = name[:-4]+'.png'
     fig_path   = fig_path.replace('2018test','2018png')
     plot_npz(fig_path,data,tp,ts)
+    '''
+    
+    
+    
+    
