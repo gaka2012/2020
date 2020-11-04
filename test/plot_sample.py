@@ -121,10 +121,10 @@ for npz in npz_datas:
 #画给的waveform_pred中的数据，默认shape是3000,3  需要给定参数：保存路径、文件名称、数据
 def plot_waveform_pred(plot_dir,file_name,data): 
     plt.figure(figsize=(25,15))
-    ax=plt.subplot(data.shape[1],1,1) #(3,1,1) 输入的数据shape是9001,3
+    ax=plt.subplot(data.shape[1],1,1) #(3,1,1) 输入的数据shape是3000,3
     for j in range(data.shape[1]):
         plt.subplot(data.shape[1],1,j+1,sharex=ax)
-        t=np.linspace(0,data.shape[0]-1,data.shape[0]) #(0,2999,300)
+        t=np.linspace(0,data.shape[0]-1,data.shape[0]) #(0,2999,3000)
         plt.plot(t,data[:,j])
     
     plt.suptitle(file_name,fontsize=25,color='r')
