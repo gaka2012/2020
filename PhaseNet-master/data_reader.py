@@ -296,6 +296,7 @@ class DataReader_pred(DataReader):
         logging.error("Failed reading {}".format(fname))
         continue
       shift = 0
+      
       # sample = meta['data'][shift:shift+self.X_shape, np.newaxis, :]
       sample = meta['data'][:, np.newaxis, :]
       if not np.array_equal(np.array(sample.shape), np.array(self.X_shape)):
@@ -313,7 +314,31 @@ class DataReader_pred(DataReader):
       sample = self.adjust_missingchannels(sample)
       sess.run(self.enqueue, feed_dict={self.sample_placeholder: sample,
                                         self.fname_placeholder: fname})
+                                        
+      '''
+      data = meta['data']
+      for i in range(100):
+        slice_data = data[i*3000:i*3000+3000,:]
+        fname      = fname.replace('.npz','_'+str(i)+'.npz')
+        # sample = meta['data'][shift:shift+self.X_shape, np.newaxis, :]
+        #sample = meta['data'][:, np.newaxis, :]
+        sample = slice_data[:, np.newaxis, :]
+        if not np.array_equal(np.array(sample.shape), np.array(self.X_shape)):
+          logging.warning(f"Shape mismatch: {sample.shape} != {self.X_shape} in {fname}")
+          tmp = np.zeros(self.X_shape)
+          tmp[:sample.shape[0],0,:sample.shape[2]] = sample[:tmp.shape[0],0,:tmp.shape[2]]
+          sample = tmp
 
+        if np.isnan(sample).any() or np.isinf(sample).any():
+          logging.warning(f"Data error: Nan or Inf found in {fname}")
+          sample[np.isnan(sample)] = 0
+          sample[np.isinf(sample)] = 0
+
+        sample = self.normalize(sample)
+        sample = self.adjust_missingchannels(sample)
+        sess.run(self.enqueue, feed_dict={self.sample_placeholder: sample,
+                                          self.fname_placeholder: fname})
+        '''
 
 class DataReader_mseed(DataReader):  #首先调用这个类
 
