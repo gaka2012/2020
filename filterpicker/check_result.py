@@ -1,12 +1,14 @@
 #!/usr/bin/python
 # -*- coding:UTF-8 -*-
 
-import os
+import os,glob
 import subprocess
 from obspy.core import UTCDateTime
 import matplotlib.pyplot as plt
 from itertools import groupby
 import numpy as np
+from obspy.core import read
+
 
 
 def plot_bar(right_list,left_list): #画柱状图，先把左右图的数据准备好。
@@ -25,13 +27,24 @@ def plot_bar(right_list,left_list): #画柱状图，先把左右图的数据准�
     fig,ax = plt.subplots(figsize=(25, 15), dpi=100) #设置像素
     test1 = ax.bar(x+width/2,right_list,width,color='lightgreen',edgecolor='black') #画2遍，第一遍画右半部分的图像，默认是画在横坐标的中间，加上width/2后就画在了靠右边一点。
     test2 = ax.bar(x1-width/2,left_list,width,color='lightgreen',edgecolor='black')#第二遍画左边的图像。
+   
+    #在柱状图上添加数字
+    for a,b in zip(x+width/2,right_list):
+        plt.text(a, b+0.3,'%d'%b, ha = 'center',va = 'bottom',fontsize=15)   
+    for a,b in zip(x1-width/2,left_list):
+        plt.text(a, b+0.3,'%d'%b, ha = 'center',va = 'bottom',fontsize=15)
+       
+       
     #plt.bar(x,num_list,color='red',tick_label=name_list,width=0.1) #柱状图的宽度
     plt.xticks(x_label,('-1','-0.5','0','0.5','1'))  #写x轴标签
     plt.yticks(y_label)
     plt.tick_params(labelsize=15) #设置xy轴的字体大小。
     plt.xlabel('time residual (s)',fontsize=15)
     plt.ylabel('number of picks',fontsize=15)
-    plt.savefig('test2.png')
+    name = sum(right_list)+sum(left_list)
+    plt.title(str(name),fontsize=24,color='r')
+    
+    plt.savefig('result.png')
     plt.show()
     plt.close()
 
@@ -39,16 +52,20 @@ def add_zero(a):#检查列表，正常应该是0-13每个数字对应一个numbe
     y = [] #画图时存储y值。
     count = 0
     i = 0
-    for num in range(14):  #检查列表，正常应该是0-13每个数字对应一个number，对于没有number的数字设为0,大于13的予以剔除。   
-        if count==14:
-            break
-        elif a[i][0]==count:
-            y.append(a[i][1])
-        elif a[i][0]!=count:
+    try:
+        for num in range(14):  #检查列表，正常应该是0-13每个数字对应一个number，对于没有number的数字设为0,大于13的予以剔除。   
+            if count==14:
+                break
+            elif a[i][0]==count:
+                y.append(a[i][1])
+            elif a[i][0]!=count:
+                y.append(0)
+                i-=1
+            count+=1
+            i+=1
+    except IndexError:
+        for n in range(count,14):
             y.append(0)
-            i-=1
-        count+=1
-        i+=1
     return y
     
 #输入一个列表，里面是元组，取元组的第一个数，如果是正的，添加到pos列表中，如果是负的，添加到neg中，然后对2个列表进行排序以及分割，间距是0.1,需要调用add_zero函数。
@@ -131,7 +148,8 @@ def read_result(filename,man_made):
         if abs(subtract) < abs(min_sub):
             min_sub = subtract
             min_i   = i
-    return min_sub,min_i #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负。
+    return min_sub,min_i #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负，同时返回最小值所在的行数，如果是
+                         #0则表示FP没有拾取，是1则表示第一行的拾取误差最小，因为是i计数是从1开始的。
             
             
 
@@ -143,34 +161,86 @@ A  = fa.readlines()
 fa.close()
 
 
+
+
+
 result = []  #将最好的时间差记下来，里面的内容应该是元组形式的
 for line in A:
     path,answer = line.split()
     if answer != '-1234':  #说明改事件是个地震，而不是噪声
-        subprocess.call('./picker_func_test %s zday1.txt  522 1206 61 10 7' %(path),shell=True) #得到一个数据的结果，检查zday1.txt中的自动拾取的结果。
+        try:
+            subprocess.call('./picker_func_test %s zday1.txt  522 1206 61 10 7' %(path),shell=True) #得到一个数据的结果，检查zday1.txt中的自动拾取的结果。
         
-        #计算人工拾取与自动拾取的差
-        man_result  = UTCDateTime(answer)  #人工拾取
-        min_result  = read_result('zday1.txt',man_result) #调用函数计算自动拾取与手动拾取的误差最小值
-        result.append(min_result)
-        os.system('rm zday1.txt')
-        #print (answer)
+            #计算人工拾取与自动拾取的差
+            man_result  = UTCDateTime(answer)  #人工拾取
+            min_result  = read_result('zday1.txt',man_result) #调用函数计算自动拾取与手动拾取的误差最小值
+            result.append(min_result)
 
-#print (len(result),result)  #70个地震自动与手动的时间差,以及是第几个地震的时间差最小
+            #FP没有拾取到的话，min_sub就会是100(默认是100)，将这些数据挑出来看看，因为有些是因为波形是没有数据的
+            if min_result[0]==100:
+                os.system('cp %s /home/zhangzhipeng/software/github/2020/data/no_pick_data'%(path))
+            
+            #FP拾取误差较大的话，即当误差大于1.4s时复制到这里
+            elif abs(min_result[0])>1.4:
+                os.system('cp %s /home/zhangzhipeng/software/github/2020/data/wrong_pick_data'%(path))
+        
+            #FP生成的的结果文件收集起来，保存到zresult.txt中，同时在其下面添加标准到时。
+            fb = open('zday1.txt','r')
+            C  = fb.readlines()
+            fb.close()
+            fc = open('zresult.txt','a+')
+            for linec in C:
+                fc.write(linec)
+            fc.write(line)
+            fc.write('\n')
+            fc.close()        
+            os.system('rm zday1.txt')
+            
+        #震相报告拾取的到时，有些是错误的，比如2018年发生的地震，到时居然是2016年的，这时候会报错,将其移动到一个位置   
+        except ValueError:
+            os.system('rm zday1.txt')
+            os.system('mv %s /home/zhangzhipeng/software/github/2020/data/wrong_data'%(path))
+
+
+fb.close()
+print (len(result),result)  #70个地震自动与手动的时间差,以及是第几个地震的时间差最小
 #plot_scatter(result,2)      #画散点图，自己看的
 
-right,left = sta_list(result)  #处理统计时间差，将其整理好，以备画图时用。
-plot_bar(right,left)
+right,left = sta_list(result)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
+plot_bar(right,left)           #画柱状图
 
 
 
 
+#读取地震事件数据，获得文件路径以及文件名称，获得人工拾取的到时，作为标准答案，形成test.txt,以备后面的对比。
 
 
 
 
+#script 1.2 读取所有的地震事件波形数据，生成test.txt用以check_result.py备用。
+'''
+fa = open('test.txt','a+')
 
+datas = glob.glob('/home/zhangzhipeng/software/github/2020/data/*.BHZ.sac')
+for data in datas[:50]:
+    st = read(data)
+    start = st[0].stats.starttime
+    at = st[0].stats.sac
+    
+    
+    tp = start+at.a-at.b
+    
+    print (at.b)
+    print (start,at.nzyear,at.nzhour,at.nzmin,at.nzsec)
+    #print (start,at.b,tp)
+    #print (at.b)
+    #print (st[0].stats.starttime)
+    #写入数据文件所在路径以及tp到时
+    fa.write(data+' '+str(tp))
+    fa.write('\n')
 
+fa.close()
+'''
 
 
 
