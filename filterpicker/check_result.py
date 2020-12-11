@@ -21,7 +21,7 @@ def plot_bar(right_list,left_list): #画柱状图，先把左右图的数据准�
     x1= np.array(b)
 
     x_label = [-2,-1,0,1,2] #在哪个位置写x轴标签
-    y_label = [10,20]
+    y_label = [100,200,300]
 
     width=0.2
     fig,ax = plt.subplots(figsize=(25, 15), dpi=100) #设置像素
