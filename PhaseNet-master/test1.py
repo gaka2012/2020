@@ -8,7 +8,8 @@ from obspy.core import UTCDateTime
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import groupby
-
+from scipy import signal
+import newfilter
 
 #phasenet 5.1
 #将cut_data中截取后的长度为120s的sac数据(3个分量)转换为npz数据，shape是3000，3，转存到npz_data中。并生成相应的csv文件
@@ -24,6 +25,7 @@ for data_file in data_files:
     z_channel = os.path.basename(data_file) #获得z分量的数据文件名称，前面已经修改过路径了！！SC.AXI_20180131230819.BHZ.sac
     #根据z分量的名称读取n、e分量,获得tp，ts到时及其对应的点数。
     st = read(z_channel.replace('BHZ.sac','*'))
+    st.resort( ) !!!!!
     
     tp = st[0].stats.sac.a
     ts = st[0].stats.sac.t0
@@ -56,6 +58,10 @@ for key,value in save_dict.items():
     csv_writer.writerow([key,value[0][0],value[0][1]]) #写入实际数据
 f.close()   
 '''
+
+
+#标签 phasenet 6.3.4对比自动拾取的结果和人工拾取的结果,针对地震事件波形数据，长度裁减为30s了
+
 
 def plot_bar(right_list,left_list): #画柱状图，先把左右图的数据准备好。
     #right_list = [27, 7, 4, 2, 2, 1, 3, 0, 0, 1, 0, 0, 2, 1] #右半部分y轴数据
@@ -141,9 +147,7 @@ def sta_list(tuple_list):
     left = sorted([(i[0]*-1,i[1]) for i in left],key=lambda x:x[0])   #将列表中的负数乘以负1,并重新排序
     left1 = add_zero(left)
     return right1,left1
-#标签 phasenet 6.3.4对比自动拾取的结果和人工拾取的结果。
-#1.1 读取out中生成的csv文件，并获取其有数据！！的行
-#ob是文件名称的组合成或，进行正则匹配
+
 out_name  = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/output/picks.csv' #存储结果的csv文件
 names = []
 
@@ -153,25 +157,141 @@ names = []
 #得到的字典键值是结果文件中的文件名，值是到时点数(里面有很多点数，因为拾取了很多的点)
 out_dict = {}
 out = []
+data_path    = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/dataset/1000_pred/'
+no_pick_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/no_pick_data/'
+no_pick = {} #字典用来存储没有拾取的文件名
+wrong_pick_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/wrong_pick_data/'
+wrong_pick = {} #字典用来存储拾取误差大于1.4s的文件名,并将这个字典保存成文件保存。
+AI_right_list = []  #拾取的误差在0.5s的文件名称
+
 with open(out_name) as f:
     reader = csv.reader(f)  #读取csv文件内容
     header = next(reader)   #返回文件的下一行，类型是列表
     #print(header)
    
-    #遍历前1000行，，只寻找开头是SC_AXI_2018_01_02.mseed的数据
+    #遍历所有AI拾取，如果没有拾取到就复制到1000_data中的no_pick_data，如果拾取的误差大于1.4s，就复制到wrong_pick_data
     for row in reader:
         if row[1]=='[]':
-            pass
+            os.system('cp %s %s'%(data_path+row[0],no_pick_path+row[0]))
+            
         else:
             pick_nums = re.findall('\d+',row[1]) #row[1]是str--'[1448]'，找到其中的数字，并转换成整数，有的有2个拾取
-            if abs(int(pick_nums[0])-1499) < 140:
+            if abs(int(pick_nums[0])-1499) < 50:
                 sub = int(pick_nums[0])-1499
                 sub_tuple = (sub/100,1)
                 out.append(sub_tuple)
+                AI_right_list.append(row[0])
+                
+            else:
+                os.system('cp %s %s'%(data_path+row[0],wrong_pick_path+row[0]))
+                tem_list = [int(pick_nums[0])]
+                wrong_pick.setdefault(row[0],[]).extend(tem_list)
+
+'''
+filename='/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/wrong_data_dict.json'
+with open(filename,'w') as file_obj:
+    json.dump(wrong_pick,file_obj)
+'''
+filename = 'AI_right_list.json'
+with open(filename,'w') as file_obj:
+    json.dump(AI_right_list,file_obj)    
+    
 print (len(out))         
 
-right,left = sta_list(out)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
-plot_bar(right,left)           #画柱状图
+
+#right,left = sta_list(out)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
+#plot_bar(right,left)           #画柱状图
+
+
+
+
+
+#遍历Phaset没有拾取或者是拾取误差大于1.4s的数据，画图，其中human_tp是人工拾取，AI_tp是phaset拾取的结果
+'''
+def plot_waveform_npz(plot_dir,file_name,data,itp,its): 
+    #画npz数据， 数据格式是npz,shape是(3000,)，输入画完图的保存路径‘/’，文件名称，数据
+    plt.figure(figsize=(25,15))
+    ax=plt.subplot(1,1,1) #(3,1,1) 输入的数据shape是3,9001
+    for j in range(1):
+        plt.subplot(1,1,j+1,sharex=ax)
+        t=np.linspace(0,2999,3000) #(0,2999,3000)
+        data_max=data.max()
+        data_min=data.min()
+        plt.plot(t,data,color = 'black')
+        plt.vlines(itp,data_min,data_max,colors='r') 
+        plt.vlines(its,data_min,data_max,colors='blue') 
+        
+    plt.suptitle(file_name,fontsize=25,color='r')
+    png_name=file_name+'.png' 
+    plt.savefig(plot_dir+png_name)
+    #os.system('mv *.png png') 
+    plt.close()  
+    
+
+
+#no_data_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/no_pick_data/*.npz'
+#no_data_fig  = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/no_pick_figure/'     #图像保存位置
+
+wrong_data_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/wrong_pick_data/*.npz'
+wrong_data_fig  = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/wrong_pick_figure/'     #图像保存位置
+
+
+filename='/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/wrong_data_dict.json'
+with open(filename) as file_obj:
+    wrong_dict = json.load(file_obj)
+
+
+data_files = glob.glob(wrong_data_path)       #所有的z分量的数据
+for data in data_files:
+    name = os.path.basename(data)
+    file_name = name.replace('.npz','')
+    A = np.load(data)
+    catalog_names = A.files
+    data = A[catalog_names[0]]
+    
+    human_tp = 1500
+    
+    if name in wrong_dict.keys():
+        AI_tP = wrong_dict[name]
+        
+    else:
+        AI_tP    = 2999
+    
+    print (AI_tP)
+
+    #去均值，线性，波形歼灭,然后滤波
+    data = data[:,2]
+    data = data
+    data = signal.detrend(data,type='linear') #去线性趋势
+    data = signal.detrend(data,type='constant')#去均值
+    data = newfilter.bandpass(data, freqmin=1,freqmax=15,df=100)#最后这个参数是采样频率，是必须要有的参数
+
+    
+    plot_waveform_npz(wrong_data_fig,file_name,data,human_tp,AI_tP)
+
+'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
