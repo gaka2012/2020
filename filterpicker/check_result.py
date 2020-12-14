@@ -138,6 +138,7 @@ def read_result(filename,man_made):
     min_sub = 100  #时间差最小值
     i       = 0    #行数
     min_i   = 0    #时间差最小所在的行数。
+    FP_pick = 0
     for line in aline:
         i+=1
         part=line.split()
@@ -148,9 +149,10 @@ def read_result(filename,man_made):
         if abs(subtract) < abs(min_sub):
             min_sub = subtract
             min_i   = i
-    return min_sub,min_i #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负，同时返回最小值所在的行数，如果是
-                         #0则表示FP没有拾取，是1则表示第一行的拾取误差最小，因为是i计数是从1开始的。
-            
+            FP_pick = newtime
+    return min_sub,min_i,FP_pick #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负，同时返回最小值所在的行数，如果是
+                                 #0则表示FP没有拾取，是1则表示第一行的拾取误差最小，因为是i计数是从1开始的。
+                                 #newtime是FP拾取的绝对时间
             
 
 
@@ -173,17 +175,23 @@ for line in A:
         
             #计算人工拾取与自动拾取的差
             man_result  = UTCDateTime(answer)  #人工拾取
-            min_result  = read_result('zday1.txt',man_result) #调用函数计算自动拾取与手动拾取的误差最小值
+            ret_result  = read_result('zday1.txt',man_result) #调用函数计算自动拾取与手动拾取的误差最小值
+            min_result  = (ret_result[0],ret_result[1])
             result.append(min_result)
 
             #FP没有拾取到的话，min_sub就会是100(默认是100)，将这些数据挑出来看看，因为有些是因为波形是没有数据的
             if min_result[0]==100:
                 os.system('cp %s /home/zhangzhipeng/software/github/2020/data/no_pick_data'%(path))
             
-            #FP拾取误差较大的话，即当误差大于1.4s时复制到这里
+            #FP拾取误差较大的话，即当误差大于1.4s时复制到这里,并且将FP拾取的结果赋值给t1
             elif abs(min_result[0])>1.4:
                 os.system('cp %s /home/zhangzhipeng/software/github/2020/data/wrong_pick_data'%(path))
-        
+                name = os.path.basename(path)
+                st = read('/home/zhangzhipeng/software/github/2020/data/wrong_pick_data/'+name)
+                s = st[0].stats.sac
+                s.t1 = ret_result[2]-(st[0].stats.starttime-s.b)
+                st.write('/home/zhangzhipeng/software/github/2020/data/wrong_pick_data/'+name)
+                
             #FP生成的的结果文件收集起来，保存到zresult.txt中，同时在其下面添加标准到时。
             fb = open('zday1.txt','r')
             C  = fb.readlines()
