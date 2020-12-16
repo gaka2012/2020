@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding:UTF-8 -*-
 
-import os,glob
+import os,glob,json
 import subprocess
 from obspy.core import UTCDateTime
 import matplotlib.pyplot as plt
@@ -9,30 +9,6 @@ from itertools import groupby
 import numpy as np
 from obspy.core import read
 
-
-'''
-fa = open('test.txt','a+')
-
-datas = glob.glob('/home/zhangzhipeng/software/github/2020/data/*.BHZ.sac')
-i=0
-for data in datas:
-    st = read(data)
-    start = st[0].stats.starttime
-    at = st[0].stats.sac
-    
-    
-    tp = start+at.a-at.b
-    
-    #print (start,at.b,tp)
-    #print (at.b)
-    #print (st[0].stats.starttime)
-    
-    fa.write(data+' '+str(tp))
-    fa.write('\n')
-    i+=1
-fa.close()
-print (i)
-'''
 
 
 
@@ -43,15 +19,15 @@ print (i)
 #data_path  = '/home/zhangzhipeng/software/github/2020/data/no_pick_data/*.BHZ.sac' #遍历一个月的所有数据 
 #save_png = '/home/zhangzhipeng/software/github/2020/data/no_pick_figure/'  #将sac三分量画图后保存位置。
 
-data_path  = '/home/zhangzhipeng/software/github/2020/data/wrong_pick_data/*.BHZ.sac' #遍历一个月的所有数据 
-save_png = '/home/zhangzhipeng/software/github/2020/data/wrong_pick_figure/'  #将sac三分量画图后保存位置。
+#data_path  = '/home/zhangzhipeng/software/github/2020/data/wrong_pick_data/*.BHZ.sac' #遍历一个月的所有数据 
+#save_png = '/home/zhangzhipeng/software/github/2020/data/wrong_pick_figure/'  #将sac三分量画图后保存位置。
 
 
 #data_path  = '/home/zhangzhipeng/software/github/2020/data/wrong_data/*.BHZ.sac' #遍历一个月的所有数据 
 #save_png = '/home/zhangzhipeng/software/github/2020/data/wrong_pick_figure/'  #将sac三分量画图后保存位置。
 
 
-
+'''
 #画npz数据， 数据格式是npz,shape是(12001,)，输入画完图的保存路径‘/’，文件名称，数据
 def plot_waveform_npz(plot_dir,file_name,data,itp,its): 
     plt.figure(figsize=(25,15))
@@ -91,8 +67,69 @@ for data in data_files:
     
     print (data.shape,tp_num)
     plot_waveform_npz(save_png,name,data,tp_num,FP_num)
+'''
 
+
+
+'''
+fa = open('test.txt','a+')
+
+i = 0
+datas = glob.glob('/home/zhangzhipeng/software/github/2020/data/*.BHZ.sac')
+for data in datas:
+    st = read(data)
+    start = st[0].stats.starttime
+    at = st[0].stats.sac
     
+    
+    tp = start+at.a-at.b
+    
+    #写入数据文件所在路径以及tp到时
+    fa.write(data+' '+str(tp))
+    fa.write('\n')
+    i+=1
+fa.close()
+print ('there are %s data'%(str(i)))
+'''
+
+filename2 = 'FP_right_list.json'
+with open(filename2) as file_obj:
+    FP_right = json.load(file_obj)
+
+
+print (type(FP_right),len(FP_right))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

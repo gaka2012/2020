@@ -305,11 +305,11 @@ if __name__=="__main__":
             plot_num_distribution(p_s_list,key,10,10,'snr','num')
 
     if cut:
+        num_r = 0 #正确截取的地震事件数量
         for key,values in sta_pha_time.items():
             fa=open('process.txt','a+') #打开这个文件查看开始跑的台站
             fa.write(key+'\n')
             fa.close()   
-            num_r = 0 #正确截取的地震事件数量
             num_l = 0 
             try:
                 ns       = key.split('-') #将SC-AXI分开

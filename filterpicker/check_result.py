@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding:UTF-8 -*-
 
-import os,glob
+import os,glob,json
 import subprocess
 from obspy.core import UTCDateTime
 import matplotlib.pyplot as plt
@@ -162,11 +162,8 @@ fa = open('test.txt')
 A  = fa.readlines()
 fa.close()
 
-
-
-
-
 result = []  #将最好的时间差记下来，里面的内容应该是元组形式的
+FP_right_list = [] #拾取误差在0.5s的将文件名保存在这里
 for line in A:
     path,answer = line.split()
     if answer != '-1234':  #说明改事件是个地震，而不是噪声
@@ -191,6 +188,10 @@ for line in A:
                 s = st[0].stats.sac
                 s.t1 = ret_result[2]-(st[0].stats.starttime-s.b)
                 st.write('/home/zhangzhipeng/software/github/2020/data/wrong_pick_data/'+name)
+            
+            #误差小于0.5的收集起来，生成文件FP_right_list.json,到时与AI生成的结果做一个比对。
+            elif abs(min_result[0])<=0.5:
+                FP_right_list.append(os.path.basename(path).replace('BHZ.sac','npz'))
                 
             #FP生成的的结果文件收集起来，保存到zresult.txt中，同时在其下面添加标准到时。
             fb = open('zday1.txt','r')
@@ -209,9 +210,13 @@ for line in A:
             os.system('rm zday1.txt')
             os.system('mv %s /home/zhangzhipeng/software/github/2020/data/wrong_data'%(path))
 
-
 fb.close()
-print (len(result),result)  #70个地震自动与手动的时间差,以及是第几个地震的时间差最小
+
+filename='FP_right_list.json'
+with open(filename,'w') as file_obj:
+    json.dump(FP_right_list,file_obj)
+
+print (len(result))  #70个地震自动与手动的时间差,以及是第几个地震的时间差最小
 #plot_scatter(result,2)      #画散点图，自己看的
 
 right,left = sta_list(result)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
@@ -225,12 +230,13 @@ plot_bar(right,left)           #画柱状图
 
 
 
-#script 1.2 读取所有的地震事件波形数据，生成test.txt用以check_result.py备用。
+#script 5.1 读取所有的地震事件波形数据，生成test.txt用以check_result.py备用。
 '''
 fa = open('test.txt','a+')
 
+i = 0
 datas = glob.glob('/home/zhangzhipeng/software/github/2020/data/*.BHZ.sac')
-for data in datas[:50]:
+for data in datas:
     st = read(data)
     start = st[0].stats.starttime
     at = st[0].stats.sac
@@ -238,17 +244,294 @@ for data in datas[:50]:
     
     tp = start+at.a-at.b
     
-    print (at.b)
-    print (start,at.nzyear,at.nzhour,at.nzmin,at.nzsec)
-    #print (start,at.b,tp)
-    #print (at.b)
-    #print (st[0].stats.starttime)
     #写入数据文件所在路径以及tp到时
     fa.write(data+' '+str(tp))
     fa.write('\n')
-
+    i+=1
 fa.close()
+print ('there are %s data'%(str(i)))
 '''
+
+#6.1 找到2个列表(2种拾取方法结果)的交集，交集可以视为正确的拾取，将不再交集中的三分量数据移动到uncertain文件夹中，并画图，手动挑选。
+
+'''
+data_path  = '/home/zhangzhipeng/software/github/2020/data/*.BHZ.sac' #遍历一个月的所有数据 
+uncertain_data = '/home/zhangzhipeng/software/github/2020/data/uncertain_right_data/'  #将sac三分量画图后保存位置。
+
+
+filename1='AI_right_list.json'
+with open(filename1) as file_obj:
+    AI_right = json.load(file_obj)
+
+filename2 = 'FP_right_list.json'
+with open(filename2) as file_obj:
+    FP_right = json.load(file_obj)
+    
+all_right_list = list(set(AI_right)&set(FP_right))
+
+
+
+data_files = glob.glob(data_path)       #所有的z分量的数据
+for data in data_files:
+    name = os.path.basename(data)
+    if name.replace('BHZ.sac','npz') not in all_right_list:
+        os.system('mv %s %s'%(data.replace('BHZ.sac','*'),uncertain_data))
+'''
+
+#6.2 承接上面的6.1，遍历uncertain文件夹中的不确定的数据，然后画图，对画完的图进行手动挑选，将不正确的图删除，剩下的数据移动到原始文件夹中。
+
+'''
+def plot_waveform_npz(plot_dir,file_name,data,itp,its): 
+    #画sac三分量数据， 将数据格式转换为npz,进行滤波等处理，shape是3,12001，输入画完图的保存路径，文件名称，数据
+    plt.figure(figsize=(25,15))
+    ax=plt.subplot(data.shape[0],1,1) #(3,1,1) 输入的数据shape是3,12001
+    for j in range(data.shape[0]):
+        plt.subplot(data.shape[0],1,j+1,sharex=ax)
+        t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,12000,12001)
+        data_max=data[0,:].max()
+        data_min=data[0,:].min()
+        plt.plot(t,data[j,:])
+        plt.vlines(itp,data_min,data_max,colors='r') 
+        plt.vlines(its,data_min,data_max,colors='blue') 
+        
+    plt.suptitle(file_name,fontsize=25,color='r')
+    png_name=file_name+'.png' 
+    plt.savefig(plot_dir+png_name)
+    #os.system('mv *.png png') 
+    plt.close()  
+    
+
+data_path  = '/home/zhangzhipeng/software/github/2020/data/uncertain_right_data' #遍历一个月的所有数据 
+save_png = '/home/zhangzhipeng/software/github/2020/data/uncertain_right_figure/'  #将sac三分量画图后保存位置。
+
+data_files = sorted(glob.glob(data_path+'/*BHZ.sac'))       #一个月的所有天数
+for datas in data_files:
+    #遍历所有的z分量数据，并以此找到三分量数据
+    file_name   = os.path.basename(datas)
+    figure_name = file_name.replace('BHZ.sac','')
+    
+    st = read(datas.replace('BHZ.sac','*'))     
+    co=st.copy()
+    #去均值，线性，波形歼灭,然后滤波
+    co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+    co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
+    
+    #将滤波后的数据转换成numpy格式，
+    data=np.asarray(co)
+
+    tp = st[0].stats.sac.a
+    b  = st[0].stats.sac.b
+    tp_num = int((tp-b)*100) #p波到时的点数是P波到时减去b值，参考时刻是发震时刻，p波到时的点数应该是1500，因为截取的时候是前15s
+    ts_num = 11000
+    
+    try:
+        plot_waveform_npz(save_png,figure_name,data,tp_num,ts_num)
+    except IndexError:
+        print (datas)
+
+'''
+#6.3 承接上面的6.2，遍历挑选后剩下的图，获得图名，然后按照图名将uncertain_right_data中的数据移动到原始data文件夹中。
+
+'''
+png_path  = '/home/zhangzhipeng/software/github/2020/data/uncertain_right_figure/*.png'  #将sac三分量画图后保存位置。
+data_path = '/home/zhangzhipeng/software/github/2020/data/' 
+
+png_files = glob.glob(png_path)
+
+for png in png_files:
+    data_name = png.replace('.png','*').replace('uncertain_right_figure','uncertain_right_data')
+    os.system('mv %s %s'%(data_name,data_path))
+'''
+
+
+#6.4 承接上面的6.3 遍历经过挑选的数据，生成相应的误差分布图。
+
+'''
+fa = open('test.txt')
+A  = fa.readlines()
+fa.close()
+
+result = []  #将最好的时间差记下来，里面的内容应该是元组形式的
+for line in A:
+    path,answer = line.split()
+    if answer != '-1234':  #说明改事件是个地震，而不是噪声
+        try:
+            subprocess.call('./picker_func_test %s zday1.txt  522 1206 61 10 7' %(path),shell=True) #得到一个数据的结果，检查zday1.txt中的自动拾取的结果。
+        
+            #计算人工拾取与自动拾取的差
+            man_result  = UTCDateTime(answer)  #人工拾取
+            ret_result  = read_result('zday1.txt',man_result) #调用函数计算自动拾取与手动拾取的误差最小值
+            min_result  = (ret_result[0],ret_result[1])
+            result.append(min_result)
+
+            #FP没有拾取到的话，min_sub就会是100(默认是100)，将这些数据挑出来看看，因为有些是因为波形是没有数据的
+            if min_result[0]==100:
+                os.system('cp %s /home/zhangzhipeng/software/github/2020/data/no_pick_data'%(path))
+            
+                
+            #FP生成的的结果文件收集起来，保存到zresult.txt中，同时在其下面添加标准到时。
+            fb = open('zday1.txt','r')
+            C  = fb.readlines()
+            fb.close()
+            fc = open('zresult.txt','a+')
+            for linec in C:
+                fc.write(linec)
+            fc.write(line)
+            fc.write('\n')
+            fc.close()        
+            os.system('rm zday1.txt')
+            
+        #震相报告拾取的到时，有些是错误的，比如2018年发生的地震，到时居然是2016年的，这时候会报错,将其移动到一个位置   
+        except ValueError:
+            os.system('rm zday1.txt')
+            os.system('mv %s /home/zhangzhipeng/software/github/2020/data/wrong_data'%(path))
+
+fb.close()
+
+
+print (len(result),result)  #70个地震自动与手动的时间差,以及是第几个地震的时间差最小
+#plot_scatter(result,2)      #画散点图，自己看的
+
+right,left = sta_list(result)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
+plot_bar(right,left)           #画柱状图
+'''
+#6.5 遍历已经完全挑选好的数据中的z分量，从中截取其中的前n秒作为噪声，做测试
+
+'''
+data_path  = '/home/zhangzhipeng/software/github/2020/data/*.BHZ.sac' #遍历挑选好的所有数据 
+noise_path = '/home/zhangzhipeng/software/github/2020/data/noise_data/'  #
+sac_files = glob.glob(data_path)
+for sac in sac_files:
+    sac_name = os.path.basename(sac)
+    st = read(sac)
+    st.sort(keys=['channel'], reverse=False) #对三分量数据排序
+    start = st[0].stats.starttime
+    
+    c_tr = st.copy()
+    data = c_tr.trim(start, start+60,pad=True, fill_value=0) 
+    
+    noise_name = noise_path+sac_name
+    data.write(noise_name,format='SAC')
+
+    print (noise_name,data)
+'''
+
+#6.6 遍历noise_data中的数据，画图，大概看一下
+'''
+data_path  = '/home/zhangzhipeng/software/github/2020/data/noise_data/*.BHZ.sac' #遍历挑选好的所有数据 
+noise_fig  = '/home/zhangzhipeng/software/github/2020/data/noise_figure/'  #
+
+noise_files = glob.glob(data_path)
+
+for noise in noise_files:
+
+    name = os.path.basename(noise)
+    st = read(noise) 
+    save_name = noise_fig+name.replace('BHZ.sac','png')  
+    st.plot(equal_scale=False,outfile=save_name,color='red',size=(1800,1000)) 
+'''
+
+
+#6.7 读取所有的噪声事件波形数据，生成test.txt用以check_result.py备用。
+
+'''
+fa = open('test.txt','a+')
+
+i = 0
+datas = glob.glob('/home/zhangzhipeng/software/github/2020/data/noise_data/*.BHZ.sac')
+for data in datas:
+    #写入数据文件所在路径以及tp到时
+    fa.write(data+' '+'-1234')
+    fa.write('\n')
+    i+=1
+fa.close()
+print ('there are %s data'%(str(i)))
+
+
+
+fa = open('1.txt')
+A  = fa.readlines()
+fa.close()
+print (len(A))
+
+
+
+#根据text.txt中的文件列表，用FP将数据遍历一遍，读取生成的zday1.txt，看其是否是空，空的话说明没有拾取到，对于噪声来说就是正常的，
+#最好显示一共多少个噪声，有几个拾取到，几个没有
+fa = open('test.txt')
+A  = fa.readlines()
+fa.close()
+
+total = len(A) #总的噪声的数量
+pick_num = 0   #拾取的数量，因为是噪声，拾取说明是错误。
+
+
+for line in A:
+    path,answer = line.split()
+    if answer == '-1234':  #说明改事件是个地震，而不是噪声
+        try:
+            subprocess.call('./picker_func_test %s zday1.txt  522 1206 61 10 7' %(path),shell=True) #得到一个数据的结果，检查zday1.txt中的自动拾取的结果。
+        
+            fb = open('zday1.txt','r')
+            B  = fb.readlines()
+            fb.close()
+            if len(B)!=0:
+                pick_num+=1 
+            os.system('rm zday1.txt')
+            
+        except Exception as e: #所有异常，输出到文件中
+            print (e)
+            
+print ('there are %s noise, FP picked %s which is wrong'%(total,pick_num))
+
+'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
