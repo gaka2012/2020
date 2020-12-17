@@ -12,57 +12,14 @@ from scipy import signal
 import newfilter
 
 #phasenet 5.1
-#将cut_data中截取后的长度为120s的sac数据(3个分量)转换为npz数据，shape是3000，3，转存到npz_data中。并生成相应的csv文件
+#将cut_data中截取后的长度为180s的sac数据(3个分量)转换为npz数据，shape是3000，3，转存到npz_data中。并生成相应的csv文件
 
-'''
-data_path  = '/home/zhangzhipeng/software/data' #截取过的长度为3001个点的sac三分量文件 
-npz_path   = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/dataset/1000_pred'   #将sac三分量转存成npz数据后保存位置。
 
-data_files = sorted(glob.glob(data_path+'/*BHZ.sac'))
-save_dict = {} #字典，存储文件名和P、S到时
-os.chdir(data_path)
-for data_file in data_files:
-    z_channel = os.path.basename(data_file) #获得z分量的数据文件名称，前面已经修改过路径了！！SC.AXI_20180131230819.BHZ.sac
-    #根据z分量的名称读取n、e分量,获得tp，ts到时及其对应的点数。
-    st = read(z_channel.replace('BHZ.sac','*'))
-    st.resort( ) !!!!!
-    
-    tp = st[0].stats.sac.a
-    ts = st[0].stats.sac.t0
-    b  = st[0].stats.sac.b  
-    tp_num = int((tp-b)*100)-4500 #p波到时的点数是P波到时减去b值，参考时刻是发震时刻，p波到时的点数应该是1500，因为截取的时候是前15s
-    ts_num = int((ts-b)*100)-4500 #s波到时有负数，比如-1234，再乘以100
-    p_s_list = [tp_num,ts_num]
-
-    try:
-        #将数据转存成npz格式的3000,3的shape
-        data = np.asarray(st.copy())[:,4500:7500].T
-
-        #字典，存储每个npz文件的名称，以及对应的t、s到时点数。
-        save_name = z_channel.replace('BHZ.sac','npz')
-        save_dict.setdefault(save_name,[]).append(p_s_list)
-        
-        #保存成npz数据格式，名称是将后面的BHZ.sac替换成npz
-        np.savez(save_name,data=data)
-        os.system('mv *.npz %s'%(npz_path))
-    except IndexError:
-        print (data_file)
-    
-    
-os.chdir('/home/zhangzhipeng/software/github/2020/PhaseNet-master/dataset')
-f = open('1000.csv','w',encoding='utf-8')
-csv_writer = csv.writer(f)
-csv_writer.writerow (['fname','itp','its'])  #写入表头
-for key,value in save_dict.items():
-    #print (key,value[0][0])
-    csv_writer.writerow([key,value[0][0],value[0][1]]) #写入实际数据
-f.close()   
-'''
 
 
 #标签 phasenet 6.3.4对比自动拾取的结果和人工拾取的结果,针对地震事件波形数据，长度裁减为30s了
 
-
+'''
 def plot_bar(right_list,left_list): #画柱状图，先把左右图的数据准备好。
     #right_list = [27, 7, 4, 2, 2, 1, 3, 0, 0, 1, 0, 0, 2, 1] #右半部分y轴数据
     a = [0+i*0.2 for i in range(14)]  #横坐标是0-13,大于13的不要了
@@ -187,11 +144,11 @@ with open(out_name) as f:
                 tem_list = [int(pick_nums[0])]
                 wrong_pick.setdefault(row[0],[]).extend(tem_list)
 
-'''
+
 filename='/home/zhangzhipeng/software/github/2020/PhaseNet-master/1000_data/wrong_data_dict.json'
 with open(filename,'w') as file_obj:
     json.dump(wrong_pick,file_obj)
-'''
+
 filename = 'AI_right_list.json'
 with open(filename,'w') as file_obj:
     json.dump(AI_right_list,file_obj)    
@@ -202,7 +159,7 @@ print (len(out))
 #right,left = sta_list(out)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
 #plot_bar(right,left)           #画柱状图
 
-
+'''
 
 
 
