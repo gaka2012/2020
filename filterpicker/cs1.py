@@ -117,29 +117,3 @@ print (type(FP_right),len(FP_right))
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
