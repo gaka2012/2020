@@ -219,6 +219,8 @@ print (data.shape)
 
 #标签 phasenet 6.3.3
 #读取phasenet生成的结果-csv文件
+
+'''
 import csv
 
 i=0
@@ -235,7 +237,7 @@ with open(file_name) as f:
                 pass
             else:
                 print (row)
-    
+'''
     
     '''
         i+=1
@@ -258,6 +260,8 @@ with open(file_name) as f:
 #标签 phasenet 6.3.4对比自动拾取的结果和人工拾取的结果。
 #1.1 读取out中生成的csv文件，并获取其有数据！！的行
 #ob是文件名称的组合成或，进行正则匹配
+
+'''
 out_name  = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/output/picks.csv' #存储结果的csv文件
 data_name = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/demo/mseed_continue.csv' 
 names = []
@@ -379,7 +383,7 @@ for key,value in people_dict.items():
         result_dict.setdefault(name,[]).append(tem)
 print (result_dict)
 
-
+'''
 
 
 '''
@@ -407,7 +411,7 @@ def plot_double_bar(result_dict):
     
 plot_double_bar(result_dict)    
     
-
+'''
 
 
 
