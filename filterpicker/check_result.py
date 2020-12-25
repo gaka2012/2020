@@ -448,14 +448,6 @@ fa.close()
 print ('there are %s data'%(str(i)))
 
 
-
-fa = open('1.txt')
-A  = fa.readlines()
-fa.close()
-print (len(A))
-
-
-
 #根据text.txt中的文件列表，用FP将数据遍历一遍，读取生成的zday1.txt，看其是否是空，空的话说明没有拾取到，对于噪声来说就是正常的，
 #最好显示一共多少个噪声，有几个拾取到，几个没有
 fa = open('test.txt')
