@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding:UTF-8 -*-
 
-import os,glob,json,csv
+import os,glob,json,csv,re
 from obspy.core import read
 from datetime import *
 from obspy.core import UTCDateTime
@@ -239,7 +239,7 @@ with open(file_name) as f:
                 print (row)
 '''
     
-    '''
+'''
         i+=1
         if i >1000:
             break
@@ -252,7 +252,7 @@ with open(file_name) as f:
                     print (row)
                     print (num,type(row[1]))  
 
-    '''
+'''
 
 
 
@@ -412,6 +412,115 @@ def plot_double_bar(result_dict):
 plot_double_bar(result_dict)    
     
 '''
+
+
+
+#标签 test1
+#将90s的sac文件转存成mseed文件
+'''
+#将四川台网一个台站一个月的数据每天生成一个npz文件，由于有些数据的起始时间不是16：00，并且三分量的数据不齐，使用trim补零，生成的是npz，8640001，3的数据
+data_path  = '/home/zhangzhipeng/software/sac_data' #遍历一个月的所有数据 
+save_path   = '/home/zhangzhipeng/software/sac_data/mseed_data/'   #将sac三分量转存成mseed数据后保存位置。
+
+data_files = sorted(glob.glob(data_path+'/*.BHZ.sac'))       #一个月的所有天数
+for day in data_files:
+    #读取每一天下的所有sac数据,设置切割的起始时间是16:00:00
+    st = read(day.replace('BHZ.sac','*')) 
+    st.sort(keys=['channel'], reverse=False) #对三分量数据按照时间排序
+
+    start = st[0].stats.starttime    
+    c_tr = st.copy()
+    data = c_tr.trim(start+90, start+180,pad=True, fill_value=0) 
+
+    name = save_path+os.path.basename(day).replace('BHZ.sac','mseed')
+    
+    data.write(name)
+
+
+#统计文件夹下每一个mseed文件名称，并写入csv文件中
+
+name_list = []
+fnames = glob.glob('/home/zhangzhipeng/software/sac_data/mseed_data/*.mseed')
+for name in fnames:
+    fname = os.path.basename(name)
+    name_list.append(fname)
+
+f = open('mseed_continue.csv','w',encoding='utf-8')
+csv_writer = csv.writer(f)
+csv_writer.writerow (['fname','E','N','Z'])  #写入表头
+for i in name_list:
+    csv_writer.writerow([i,'BHE','BHN','BHZ']) #写入实际数据
+f.close() 
+
+'''
+
+
+#读取phasenet跑的连续波形数据(90s)的结果，建立字典，键是mseed文件名称，值是相对应的拾取点数的第一个，
+#然后将结果保存下来，以备画图。
+
+out_name = './server_result/picks.csv'
+
+out_dict = {}
+with open(out_name) as f:
+    reader = csv.reader(f)  #读取csv文件内容
+    header = next(reader)   #返回文件的下一行，类型是列表
+    #print(header)
+   
+    for row in reader:
+        name = row[0] #'SC.AXI_20180104103927.mseed_0'
+        name_point = name.split('_')[-1] #文件名称的后缀 0,3000,6000等
+        file_name  = name.replace('_'+name_point,'')
+        
+        if row[1]=='[]':
+                pass
+        else:
+            #找到AI拾取的结果
+            pick_nums = re.findall('\d+',row[1]) #返回一个列表，里面是str格式的拾取，有的有2个拾取
+             
+            if int(name_point)<9000:
+                pick_num = int(name_point)+int(pick_nums[0])
+            else:
+                pick_num  = int(pick_nums[0])+int(name_point)-10500
+            
+            #更新字典，键是文件名，值是最小的到时拾取
+            if file_name not in out_dict.keys():                
+                out_dict[file_name] = pick_num
+            else:
+                if out_dict[file_name] > pick_num:
+                    out_dict[file_name] = pick_num
+                    
+                    
+#print (out_dict)
+pick_num = 0 #最后到的地震数量的总数
+less_one = 0.5 #只有残差小于这个数的才会被装到列表中。
+less_one_num = 0
+ai_result = []
+ai_dict = {}
+
+for key,value in out_dict.items():
+    pick_num+=1
+    resudal = (value-3000)/100 #AI拾取到时与手动拾取的残差
+    if abs(resudal)<less_one:
+        tem_list = [resudal,1]
+        ai_result.append(tem_list)
+        less_one_num +=1
+        ai_dict[key] = resudal
+    #print (resudal,value)
+
+print ('there are %s picks and %s resudal less than %s second'%(pick_num,less_one_num,less_one))
+
+
+filename='ai_result.json'
+with open(filename,'w') as file_obj:
+    json.dump(ai_result,file_obj)
+
+
+#字典，键是文件名，值是残差小于less_one的拾取
+with open('ai_dict.json','w') as obj:
+    json.dump(ai_dict,obj)
+
+
+
 
 
 
