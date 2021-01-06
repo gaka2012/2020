@@ -7,16 +7,36 @@ from obspy.core import read
 from obspy.core import UTCDateTime
 
 
-
 #根据挑出的图像(data_list)从未滤波的数据(sac_data)中来选择sac数据,并将信噪比改正为滤波后的信噪比并归一化到不确定性，将数据保存到(data)中。
-data_path = '/home/zhangzhipeng/software/github/2020/program/sac_data' #未经滤波的sac数据的路径
-save_path = '/home/zhangzhipeng/software/github/2020/program/data'     #将挑出来的数据保存到此路径下。
+data_path = '/home/zhangzhipeng/data/FP_data' #未经滤波的data
+save_path = '/home/zhangzhipeng/data/FP_data/70'     #将挑出来的数据保存到此路径下。
+'''
 #1.根据图像名称得到sac文件名称，并按照图像文件名中的信噪比赋值。
 #data_list = glob.glob("/home/zhangzhipeng/software/github/2020/program/data_figure/*.png") 
-data_list = glob.glob("/home/zhangzhipeng/backup/data/pick_data/*.png")
+png_list = glob.glob("/home/zhangzhipeng/data/FP_data/filter_data/plot_figure/*.png")
 
-for data in data_list:
-    name     = os.path.basename(data) #SC.AXI_20180101062906_12_mag.png  
+for png in png_list:
+    name     = os.path.basename(png) #10.SC.AXI_20180101062906.png  
+    snr      = name.split('.')[0]+'.'
+    sac_name = name.strip(snr).replace('png','BHZ.sac')
+    #sac_name = name.replace(snr,'')#.replace('png','BHZ.sac')
+    sac_path = data_path+'/'+sac_name
+    
+    os.system('cp %s %s'%(sac_path,save_path))
+    os.chdir(save_path)
+    st = read(sac_name)
+    st[0].stats.sac.t9 = 0.5
+    st[0].write(sac_name,format='SAC')
+'''
+
+data = glob.glob(save_path+'/*.BHZ.sac')
+for i in data:
+    st = read(i)
+    print(st[0].stats.sac.t9)
+
+
+    
+'''
     s        = name.split('_')
     sac_name = "{}_{}.BHZ.sac".format(s[0],s[1]) #SC.AXI_20180101062906.BHZ.sac
 
@@ -45,6 +65,9 @@ for data in data_list:
     st[0].stats.sac.t9 = un
     st[0].write(sac_name,format='SAC')
     
+'''
+
+
     
 '''
 #读取(data)中的数据路径以及p波到时写入txt文件中。

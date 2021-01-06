@@ -139,24 +139,27 @@ def read_result(filename,man_made):
     i       = 0    #行数
     min_i   = 0    #时间差最小所在的行数。
     FP_pick = 0
+    FP_pick_list = []
     for line in aline:
         i+=1
         part=line.split()
         s1,s2,s3 = part[6],part[7],part[8]
         newtime  = UTCDateTime(s1+' '+s2+' '+s3) #自动拾取的时间
         subtract = newtime-man_made              #自动与手动拾取的时间差。
+        FP_pick_list.append(str(newtime))        #所有的自动拾取结果放在一个列表中
         #找到时间差最小的
         if abs(subtract) < abs(min_sub):
             min_sub = subtract
             min_i   = i
             FP_pick = newtime
-    return min_sub,min_i,FP_pick #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负，同时返回最小值所在的行数，如果是
+    return FP_pick_list
+    #return min_sub,min_i,FP_pick #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负，同时返回最小值所在的行数，如果是
                                  #0则表示FP没有拾取，是1则表示第一行的拾取误差最小，因为是i计数是从1开始的。
                                  #newtime是FP拾取的绝对时间
             
 
 
-
+'''
 #1 第一步：读取test.txt中的数据路径和答案,存储到A中，将数据路径赋值给要调用的程序，得到结果，与标准答案进行对比。
 fa = open('test.txt')
 A  = fa.readlines()
@@ -221,7 +224,7 @@ print (len(result))  #70个地震自动与手动的时间差,以及是第几个�
 
 right,left = sta_list(result)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
 plot_bar(right,left)           #画柱状图
-
+'''
 
 
 
@@ -235,7 +238,7 @@ plot_bar(right,left)           #画柱状图
 fa = open('test.txt','a+')
 
 i = 0
-datas = glob.glob('/home/zhangzhipeng/software/github/2020/data/*.BHZ.sac')
+datas = glob.glob('/home/zhangzhipeng/software/github/data/*.BHZ.sac')
 for data in datas:
     st = read(data)
     start = st[0].stats.starttime
@@ -251,7 +254,6 @@ for data in datas:
 fa.close()
 print ('there are %s data'%(str(i)))
 '''
-
 #6.1 找到2个列表(2种拾取方法结果)的交集，交集可以视为正确的拾取，将不再交集中的三分量数据移动到uncertain文件夹中，并画图，手动挑选。
 
 '''
@@ -351,9 +353,10 @@ fa = open('test.txt')
 A  = fa.readlines()
 fa.close()
 
-result = []  #将最好的时间差记下来，里面的内容应该是元组形式的
+result = {}  #字典，键是文件名称，值是FP算法对应的拾取(str格式，可以转换为UTC格式的时间)
 for line in A:
     path,answer = line.split()
+    sac_name = os.path.basename(path)
     if answer != '-1234':  #说明改事件是个地震，而不是噪声
         try:
             subprocess.call('./picker_func_test %s zday1.txt  522 1206 61 10 7' %(path),shell=True) #得到一个数据的结果，检查zday1.txt中的自动拾取的结果。
@@ -361,40 +364,140 @@ for line in A:
             #计算人工拾取与自动拾取的差
             man_result  = UTCDateTime(answer)  #人工拾取
             ret_result  = read_result('zday1.txt',man_result) #调用函数计算自动拾取与手动拾取的误差最小值
-            min_result  = (ret_result[0],ret_result[1])
-            result.append(min_result)
-
-            #FP没有拾取到的话，min_sub就会是100(默认是100)，将这些数据挑出来看看，因为有些是因为波形是没有数据的
-            if min_result[0]==100:
-                os.system('cp %s /home/zhangzhipeng/software/github/2020/data/no_pick_data'%(path))
             
-                
-            #FP生成的的结果文件收集起来，保存到zresult.txt中，同时在其下面添加标准到时。
-            fb = open('zday1.txt','r')
-            C  = fb.readlines()
-            fb.close()
-            fc = open('zresult.txt','a+')
-            for linec in C:
-                fc.write(linec)
-            fc.write(line)
-            fc.write('\n')
-            fc.close()        
+            result.setdefault(sac_name,[]).extend(ret_result)
+    
             os.system('rm zday1.txt')
-            
         #震相报告拾取的到时，有些是错误的，比如2018年发生的地震，到时居然是2016年的，这时候会报错,将其移动到一个位置   
         except ValueError:
             os.system('rm zday1.txt')
             os.system('mv %s /home/zhangzhipeng/software/github/2020/data/wrong_data'%(path))
 
-fb.close()
 
 
-print (len(result),result)  #70个地震自动与手动的时间差,以及是第几个地震的时间差最小
-#plot_scatter(result,2)      #画散点图，自己看的
+keys = result.keys()
+print (len(keys))
 
-right,left = sta_list(result)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
-plot_bar(right,left)           #画柱状图
+
+filename='fp_pick.json'
+with open(filename,'w') as file_obj:
+    json.dump(result,file_obj)
 '''
+
+'''
+#原始数据所在的位置
+data_path = '/home/zhangzhipeng/software/github/data'
+sac_files = glob.glob(data_path+'/*.BHZ.sac')
+save_path = '/home/zhangzhipeng/software/github/data/no_pick'
+save_wrong = '/home/zhangzhipeng/software/github/data/wrong_pick'
+
+#FP对上述原始数据拾取结果
+filename='fp_pick.json'
+with open(filename) as file_obj:
+    fp_pick = json.load(file_obj)
+
+keys = fp_pick.keys()
+print(len(keys))
+
+no_pick,one_pick,two_pick,three_pick = 0,0,0,0
+os.chdir(data_path)
+#遍历所有的原始数据，将没有和错误的拾取分别放在不同的位置，并且对错误的拾取添加t9,t8等。
+for sac_file in sac_files:
+    sac_name = os.path.basename(sac_file)
+    if sac_name in keys: #keys中对应的值是fp拾取的结果，有的有0个拾取，有的可能有多个拾取
+        value = fp_pick[sac_name]
+        if len(value)==0:
+            no_pick+=1
+            os.system('cp %s %s'%(sac_name,save_path))
+        else:    
+            st = read(sac_name)
+            c_tr = st[0].copy()
+            s = c_tr.stats.sac
+            if len(value)==1:    
+                s.t9 = UTCDateTime(value[0])-c_tr.stats.starttime
+                one_pick +=1
+            elif len(value)==2:
+                s.t9 = UTCDateTime(value[0])-c_tr.stats.starttime
+                s.t8 = UTCDateTime(value[1])-c_tr.stats.starttime
+                two_pick +=1
+            elif len(value)>=3:
+                s.t9 = UTCDateTime(value[0])-c_tr.stats.starttime
+                s.t8 = UTCDateTime(value[1])-c_tr.stats.starttime
+                s.t7 = UTCDateTime(value[2])-c_tr.stats.starttime
+                three_pick +=1
+            data_name = save_wrong+'/'+sac_name
+            c_tr.write(data_name,format='SAC')
+
+print('no_pick %s one_pick %s two_pick %s three_pick and above %s'%(no_pick,one_pick,two_pick,three_pick))
+'''
+
+
+#1.5 sac单分量数据画图， 将数据格式转换为npz,进行滤波等处理，shape是1,9001，输入画完图的保存路径，文件名称，数据，tp到时
+
+def plot_waveform_npz(plot_dir,file_name,data,itp): 
+    plt.figure(figsize=(25,15))
+    data = data
+    t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,9000,9001)
+    plt.plot(t,data[0,:])        
+    data_max=data.max()
+    data_min=data.min()
+    tp_num = itp
+    plt.vlines(tp_num[0],data_min,data_max,colors='r') 
+    #plt.vlines(tp_num[1],data_min,data_max,colors='r') 
+    
+    #title = str(tp_num[0])+'-'+str(tp_num[1])
+    title = str(tp_num[0])
+    plt.suptitle(title,fontsize=25)
+    
+    png_name=plot_dir+'/'+file_name+'png' #保留的文件名是信噪比加后面的信息
+    plt.savefig(png_name)
+    plt.close()  
+
+
+data_path  = '/home/zhangzhipeng/software/github/data/no_pick' #遍历一个月的所有数据 
+save_dir = '/home/zhangzhipeng/software/github/data/no_pick/figure'  #将sac三分量画图后保存位置。
+
+data_files = sorted(glob.glob(data_path+'/*BHZ.sac'))       #一个月的所有天数
+total = len(data_files)
+num =0
+for data in data_files:
+    #遍历所有的z分量数据，并以此找到三分量数据
+    file_name   = os.path.basename(data)
+    figure_name = file_name.replace('BHZ.sac','')
+    
+    st = read(data)     
+    co=st.copy()
+    #去均值，线性，波形歼灭,然后滤波
+    co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+    co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
+    
+    #将滤波后的数据转换成numpy格式，
+    data=np.asarray(co)
+    tp_list = [3000]
+    
+    '''
+    try:
+        tp1 = st[0].stats.sac.t9
+        tp2 = st[0].stats.sac.t8
+        tp_list = [tp1,tp2]
+    except AttributeError:
+        tp_list = [tp1,60]
+    '''  
+    #tp_list = [int(i*100) for i in tp_list]
+    plot_waveform_npz(save_dir,figure_name,data,tp_list)
+
+
+
+
+
+
+
+
+
+
+
+
+
 #6.5 遍历已经完全挑选好的数据中的z分量，从中截取其中的前n秒作为噪声，做测试
 
 '''

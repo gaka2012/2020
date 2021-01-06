@@ -154,6 +154,123 @@ for data in data_files:
 
 
 
+#script 5.1 读取所有的地震事件波形数据，生成test.txt用以check_result.py备用。
+'''
+fa = open('test.txt','a+')
+
+i = 0
+datas = glob.glob('/home/zhangzhipeng/data/test_data/*.BHZ.sac')
+for data in datas:
+    st = read(data)
+    start = st[0].stats.starttime
+    at = st[0].stats.sac
+    tp = start+at.a-at.b
+
+    #写入数据文件所在路径以及tp到时
+    fa.write(data+' '+str(tp))
+    fa.write('\n')
+    i+=1
+fa.close()
+print ('there are %s data'%(str(i)))
+'''
+
+
+#根据text.txt中的文件列表，用FP将数据遍历一遍，读取生成的zday1.txt，看其是否是空，空的话说明没有拾取到，对于噪声来说就是正常的，
+#最好显示一共多少个噪声，有几个拾取到，几个没有
+'''
+fa = open('test.txt')
+A  = fa.readlines()
+fa.close()
+
+total = len(A) #总的噪声的数量
+pick_num = 0   #拾取的数量，因为是噪声，拾取说明是错误。
+
+
+for line in A:
+    path,answer = line.split()
+    if answer != '-1234':  #说明改事件是个地震，而不是噪声
+        try:
+            subprocess.call('./picker_func_test %s zday1.txt  522 1206 61 10 7' %(path),shell=True) #得到一个数据的结果，检查zday1.txt中的自动拾取的结果。
+        
+            fb = open('zday1.txt','r')
+            B  = fb.readlines()
+            fb.close()
+            if len(B)!=0:
+                pick_num+=1 
+            os.system('rm zday1.txt')
+            
+        except Exception as e: #所有异常，输出到文件中
+            print (e)
+            
+print ('there are %s noise, FP picked %s which is wrong'%(total,pick_num))
+'''
+
+
+#画npz数据，shape是9001,分别是滤波后的原始数据与特征函数数据 输入画完图的保存路径，文件名称，数据
+def plot_waveform_npz_3000(save_dir,file_name,data,char_data): 
+    
+    fig = plt.figure()
+    plt.figure(figsize=(25,15))
+    ax=plt.subplot(2,1,1) #(3,1,1) 输入的数据shape是3000,3
+
+    plt.subplot(2,1,1,sharex=ax)
+    t=np.linspace(0,data.shape[0]-1,data.shape[0]) #(0,9000,9001)
+    plt.plot(t,data)
+    
+    plt.subplot(2,1,2,sharex=ax)
+    t=np.linspace(0,char_data.shape[0]-1,char_data.shape[0]) #(0,9000,9001)
+    plt.plot(t,char_data)
+    
+    plt.suptitle(file_name,fontsize=25,color='r')
+    png_name=file_name+'.png' 
+    plt.savefig(save_dir+png_name)
+    #os.system('mv *.png png') 
+    plt.close()   
+
+
+
+#加载特征函数,准备用来画图
+fa = open('zzp1.txt','r')
+A  = fa.readlines()
+fa.close()
+
+char_list = [] #特征函数列表
+line_num = 0
+for line in A:
+    line_num +=1
+    char = line.split()[1]
+    char_list.append(float(char))
+    
+print('there are %s lines'%(line_num))
+char_data = np.asarray(char_list)
+print (char_data.shape)
+
+st = read('/home/zhangzhipeng/data/test_data/SC.AXI_20180128020412.BHZ.sac')
+co=st[0].copy()
+#去均值，线性，波形歼灭,然后滤波
+co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
+    
+#将滤波后的数据转换成numpy格式，并计算人工与FP拾取的结果，tp是人工拾取，Fp是FP拾取的结果，都画在一起。
+data=np.asarray(co)
+print (data.shape)
+
+
+plot_waveform_npz_3000('figure/','test',data,char_data) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

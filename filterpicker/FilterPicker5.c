@@ -235,10 +235,10 @@ void Pick(
             mem->polaritySumAbsDerivative[k][mem->upEventBufPtr] += fabs(polarityderivativeIncrement);
         }   //numRecursive结束/////////////////
 //////2 在这写入特征函数        
-        //fp=fopen("zzp1.txt","a+");
-/*        fprintf(fp,"n==%d   ",n);*/
-        //fprintf(fp,"%f\n",charFunctClipped);
-        //fclose(fp);
+        fp=fopen("zzp1.txt","a+");
+        fprintf(fp,"n==%d   ",n);
+        fprintf(fp,"%f\n",charFunctClipped);
+        fclose(fp);
 
         // _DOC_ =============================
         // _DOC_ trigger and pick logic //从刚开始，过一段稳定时间之后才能pick
