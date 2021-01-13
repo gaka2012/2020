@@ -7,6 +7,9 @@ from datetime import *
 from obspy.core import UTCDateTime
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import signal
+from scipy.stats import entropy as sci_entropy
+
 
 #phasenet 5.1
 #将cut_data中截取后的长度为120s的sac数据(3个分量)转换为npz数据，shape是3000，3，转存到npz_data中。并生成相应的csv文件
@@ -454,11 +457,43 @@ f.close()
 
 '''
 
+#标签test2.1 根据字典中的文件名生成csv文件。
+'''
+filename='/home/zhangzhipeng/software/github/2020/90_s_event_info.json'
+with open(filename) as file_obj:
+    info = json.load(file_obj)
+keys = list(info.keys())
+
+
+f = open('one.csv','w',encoding='utf-8')
+csv_writer = csv.writer(f)
+csv_writer.writerow (['fname','E','N','Z'])  #写入表头
+
+for key in keys:
+    csv_writer.writerow([key.replace('BHZ.sac','mseed'),'BHE','BHN','BHZ']) #写入实际数据
+f.close()   
+'''
+#标签test2.2 ai识别的结果，并将识别错误的，需要所有的地震事件名称，csv结果文件。
+
+'''
+filename='./mseed_data/90_s_event_info.json'
+out_name = './output/picks.csv'
+data_path = '/bashi_fs/centos_data/zzp/120_data' #原始数据位置
+no_pick    = '/bashi_fs/centos_data/zzp/120_data/cp_no_pick'
+wrong_pick = '/bashi_fs/centos_data/zzp/120_data/cp_wrong_pick'
+
+with open(filename) as file_obj:
+    info = json.load(file_obj)
+
+keys = list(info.keys())   #'SC.PWU_20180329020838.BHZ.sac
+
+print('there are %s datas '%(len(keys)))
+
 
 #读取phasenet跑的连续波形数据(90s)的结果，建立字典，键是mseed文件名称，值是相对应的拾取点数的第一个，
 #然后将结果保存下来，以备画图。
 
-out_name = './server_result/picks.csv'
+
 
 out_dict = {}
 with open(out_name) as f:
@@ -469,7 +504,7 @@ with open(out_name) as f:
     for row in reader:
         name = row[0] #'SC.AXI_20180104103927.mseed_0'
         name_point = name.split('_')[-1] #文件名称的后缀 0,3000,6000等
-        file_name  = name.replace('_'+name_point,'')
+        file_name  = name.replace('_'+name_point,'') #文件名 SC.AXI_20180104103927
         
         if row[1]=='[]':
                 pass
@@ -486,42 +521,323 @@ with open(out_name) as f:
             if file_name not in out_dict.keys():                
                 out_dict[file_name] = pick_num
             else:
-                if out_dict[file_name] > pick_num:
+                if abs(out_dict[file_name]-3000) > abs(pick_num-3000):
                     out_dict[file_name] = pick_num
                     
                     
 #print (out_dict)
 pick_num = 0 #最后到的地震数量的总数
 less_one = 0.5 #只有残差小于这个数的才会被装到列表中。
-less_one_num = 0
+no_pick_num,less_one_num = 0,0
 ai_result = []
-ai_dict = {}
+ai_dict,wrong_dict = {},{}
+ai_keys = list(out_dict.keys())
 
-for key,value in out_dict.items():
-    pick_num+=1
-    resudal = (value-3000)/100 #AI拾取到时与手动拾取的残差
-    if abs(resudal)<less_one:
-        tem_list = [resudal,1]
-        ai_result.append(tem_list)
-        less_one_num +=1
-        ai_dict[key] = resudal
-    #print (resudal,value)
+#遍历所有的地震事件，如果ai拾取到了，pick_num加1，
+for key in keys:
+    key_name = key #SC.PWU_20180329020838.BHZ.sac
+    key = key.replace('BHZ.sac','mseed')
+    if key in ai_keys:
+        pick_num+=1
+        resudal = (out_dict[key]-3000)/100 #AI拾取到时与手动拾取的残差
+        if abs(resudal)<less_one:
+            tem_list = [resudal,1]
+            ai_result.append(tem_list) #误差元组，用来画图
+            less_one_num +=1
+            ai_dict[key] = resudal     #字典，值是文件名称，对应的值是误差，这个字典只有误差小于less_one的数据才会写入。
+        else:
+            wrong_dict[key_name] = resudal  #拾取误差大于0.5s的拾取，形成字典，键是文件名称，值是对应的拾取时间。
+
+    else:
+        no_pick_num+=1
 
 print ('there are %s picks and %s resudal less than %s second'%(pick_num,less_one_num,less_one))
+print ('%s data no picks'%(no_pick_num))
 
+wrong_keys = list(wrong_dict.keys())
+print ('there are %s wrong_picks '%(len(wrong_keys)))
 
+#保存字典
 filename='ai_result.json'
 with open(filename,'w') as file_obj:
     json.dump(ai_result,file_obj)
 
-
-#字典，键是文件名，值是残差小于less_one的拾取
-with open('ai_dict.json','w') as obj:
-    json.dump(ai_dict,obj)
+'''
 
 
 
+#1.5 sac单分量数据画图， 将数据格式转换为npz,进行滤波等处理，shape是1,9001，输入画完图的保存路径，文件名称，数据，tp到时
 
+'''
+def plot_waveform_npz(plot_dir,file_name,data,itp): 
+    plt.figure(figsize=(25,15))
+    data = data
+    t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,9000,9001)
+    plt.plot(t,data[0,:])        
+    data_max=data.max()
+    data_min=data.min()
+    tp_num = itp
+    plt.vlines(tp_num[0],data_min,data_max,colors='blue') 
+    plt.vlines(tp_num[1],data_min,data_max,colors='r') 
+    
+    title = str(tp_num[1])
+    plt.suptitle(title,fontsize=25)
+    
+    png_name=plot_dir+'/'+file_name+'png' #保留的文件名是信噪比加后面的信息
+    plt.savefig(png_name)
+    plt.close()  
+
+
+data_path  = '/home/zhangzhipeng/software/github/2020/data/wrong_pick'  
+save_dir = '/home/zhangzhipeng/software/github/2020/data/wrong_pick/figure'  
+
+data_files = sorted(glob.glob(data_path+'/*BHZ.sac'))       #一个月的所有天数
+total = len(data_files)
+num =0
+for data in data_files:
+    #遍历所有的z分量数据，并以此找到三分量数据
+    file_name   = os.path.basename(data)
+    figure_name = file_name.replace('BHZ.sac','')
+    if file_name in wrong_keys:
+    
+        st = read(data)     
+        co=st.copy()
+        #去均值，线性，波形歼灭,然后滤波
+        co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+        co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
+        
+        #将滤波后的数据转换成numpy格式，
+        data=np.asarray(co)
+        tp_ai   = int(wrong_dict[file_name]*100)
+        tp_list = [3000,3000+tp_ai]
+        print (tp_list)
+                 
+        plot_waveform_npz(save_dir,figure_name,data,tp_list)
+
+'''
+
+
+
+
+
+#将noise数据的文件名制成csv文件，准备跑phasenet
+
+'''
+data_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/mseed_data/11419_data'
+name_list = []
+mseed_name = glob.glob(data_path+'/*.mseed')
+for name in mseed_name:
+    mseed = os.path.basename(name)
+    name_list.append(mseed)
+
+f = open('noise.csv','w',encoding='utf-8')
+csv_writer = csv.writer(f)
+csv_writer.writerow (['fname','E','N','Z'])  #写入表头
+
+for key in name_list:
+    csv_writer.writerow([key,'BHE','BHN','BHZ']) #写入实际数据
+f.close()   
+'''
+
+
+#标签test2.2 ai识别噪声的结果，并将识别错误的，。
+
+'''
+out_name = './output/picks.csv'
+
+
+
+#读取phasenet跑的连续波形数据(90s)的结果，建立字典，键是mseed文件名称，值是相对应的拾取点数的第一个，
+#然后将结果保存下来，以备画图。
+
+out_dict = {}
+with open(out_name) as f:
+    reader = csv.reader(f)  #读取csv文件内容
+    header = next(reader)   #返回文件的下一行，类型是列表
+    #print(header)
+   
+    for row in reader:
+        name = row[0] #'SC.AXI_20180104103927.mseed_0'
+        name_point = name.split('_')[-1] #文件名称的后缀 0,3000,6000等
+        file_name  = name.replace('_'+name_point,'') #文件名 SC.AXI_20180104103927.mseed
+        
+        if row[1]=='[]':
+                pass
+        else:
+            #找到AI拾取的结果
+            pick_nums = re.findall('\d+',row[1]) #返回一个列表，里面是str格式的拾取，有的有2个拾取
+             
+            if int(name_point)<9000:
+                pick_num = int(name_point)+int(pick_nums[0])
+            else:
+                pick_num  = int(pick_nums[0])+int(name_point)-10500
+            
+            #更新字典，键是文件名，值是最小的到时拾取
+            if file_name not in out_dict.keys():                
+                out_dict[file_name] = pick_num
+            else:
+                if abs(out_dict[file_name]-3000) > abs(pick_num-3000):
+                    out_dict[file_name] = pick_num
+                    
+
+keys = list(out_dict.keys())
+print('ai picks %s wrong noise'%(len(keys)))
+
+
+
+sac_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/mseed_data/11419_data' #BHZ.sac文件所在目录
+save_path = '/home/zhangzhipeng/software/data/noise_data/ai_pick' #将ai错误拾取的noise复制到这个路径中
+sacs = glob.glob(sac_path+'/*.mseed')
+sacs = [os.path.basename(i) for i in sacs] #sac文件的所有名称
+
+num = 0
+os.chdir(sac_path)
+#ai从noise中错误拾取的地震名称
+for key in keys:
+    sac_name = key
+    if sac_name in sacs:
+        num+=1
+        os.system('cp %s %s'%(sac_name,save_path))
+
+
+print('there are %s wrong picks'%(num))
+
+
+#保存字典
+filename='ai_noise.json'
+with open(filename,'w') as file_obj:
+    json.dump(out_dict,file_obj)
+
+'''
+
+
+'''
+def short_term_energy(chunk):
+    return np.sum((np.abs(chunk) ** 2) / chunk.shape[0])
+
+def energy_per_frame(windows):
+    out = []
+    for row in windows: #row代表每一行
+        out.append(short_term_energy(row)) #每个值的平方和再处以5
+    return np.hstack(np.asarray(out))
+
+
+#子函数，计算熵值，首先将数据转换成numpy格式，然后作预处理，
+def calculate_entropy(tr,tp_num):
+    
+    preceding_time,duration_time = 5,15 #p波到时前5s，总长度为15s
+    num = tp_num
+    fm = 100 #默认频率是100，秒数乘以频率得到点数。
+    if num+duration_time*100>=9000:
+        num = 9000-duration_time*100
+    elif num-preceding_time<=0:
+        num = preceding_time*100
+    
+    #计算实际地震熵值
+    data = tr
+    
+    event = data[num-preceding_time*fm:num-preceding_time*fm+duration_time*fm]  #15秒长的数据    
+    event_part   = np.reshape(event,[-1,100])       #reshape一下，将其转换为n(15)个长度为100的片段。
+    event_energy = energy_per_frame(event_part)  #得到15个片段的能量值
+    event_out    = sci_entropy(event_energy) #求熵值,即15个平均能力的熵值。
+    return round(event_out,2)
+
+#画npz数据， 数据格式是npz,shape是3,9001，输入画完图的保存路径，文件名称，数据
+def plot_waveform_npz(plot_dir,file_name,data,itp,entropy): 
+    plt.figure(figsize=(25,15))
+    ax=plt.subplot(data.shape[0],1,1) #(3,1,1) 输入的数据shape是3,9001
+    print(data.shape)
+    for j in range(data.shape[0]):
+        plt.subplot(data.shape[0],1,j+1,sharex=ax)
+        t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,2999,3000)
+        data_max=data[2,:].max()
+        data_min=data[2,:].min()
+        plt.plot(t,data[j,:])
+        plt.vlines(itp,data_min,data_max,colors='r') 
+        
+    plt.suptitle(str(entropy),fontsize=25,color='r')
+    png_name=file_name+'.png' 
+    plt.savefig(plot_dir+png_name)
+    #os.system('mv *.png png') 
+    plt.close()  
+    
+
+
+filename='ai_noise.json'
+with open(filename) as file_obj:
+    ai_noise = json.load(file_obj)
+
+
+mseed_path = '/home/zhangzhipeng/software/data/noise_data/ai_pick' #将ai错误拾取的noise复制到这个路径中,2065个
+mseeds = glob.glob(mseed_path+'/*.mseed')
+
+event = []
+num = 0
+for mseed in mseeds:
+    mseed_name = os.path.basename(mseed)
+    if mseed_name in ai_noise.keys():
+        tp = ai_noise[mseed_name]
+        st = read(mseed)    
+        num+=1
+        st.sort(keys=['channel'], reverse=False) #对三分量数据排序
+    
+        co=st.copy()
+        #去均值，线性，波形歼灭,然后滤波
+        co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+        co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
+            
+        #将滤波后的数据转换成numpy格式，
+        data=np.asarray(co)    #(3,9001)   
+        z_channel = data[2,:]  #(9001)
+        
+        try:
+            entropy = calculate_entropy(z_channel,tp)
+            event.append(entropy)
+    
+            plot_waveform_npz(mseed_path+'/figure/',mseed_name,data,tp,entropy)
+        except ValueError:
+            print(mseed_name)
+print('there are %s event'%(num))
+
+'''   
+    
+    
+    
+#读取phasenet跑的连续波形数据(90s)的结果，建立字典，键是mseed文件名称，值是相对应的拾取点数最好的一个，
+
+out_name = './output/picks.csv'
+out_dict = {}
+with open(out_name) as f:
+    reader = csv.reader(f)  #读取csv文件内容
+    header = next(reader)   #返回文件的下一行，类型是列表
+    #print(header)
+   
+    for row in reader:
+        name = row[0] #'SC.AXI_20180104103927.mseed_0'
+        name_point = name.split('_')[-1] #文件名称的后缀 0,3000,6000等
+        file_name  = name.replace('_'+name_point,'') #文件名 SC.AXI_20180104103927.mseed
+        
+        if row[1]=='[]':
+                pass
+        else:
+            #找到AI拾取的结果
+            pick_nums = re.findall('\d+',row[1]) #返回一个列表，里面是str格式的拾取，有的有2个拾取
+             
+            if int(name_point)<9000:
+                pick_num = int(name_point)+int(pick_nums[0])
+            else:
+                pick_num  = int(pick_nums[0])+int(name_point)-10500
+            
+            #更新字典，键是文件名，值是最小的到时拾取
+            if file_name not in out_dict.keys():                
+                out_dict[file_name] = pick_num-3000
+            else:
+                if abs(out_dict[file_name]) > abs(pick_num-3000):
+                    out_dict[file_name] = pick_num-3000
+                    
+                    
+with open('ai_name_pick.json','w') as ob:
+    json.dump(out_dict,ob)     
 
 
 

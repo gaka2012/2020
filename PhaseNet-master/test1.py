@@ -14,6 +14,7 @@ import newfilter
 #phasenet 5.1
 #将cut_data中截取后的长度为120s的sac数据(3个分量)转换为npz数据，shape是3000，3，转存到npz_data中。并生成相应的csv文件
 
+'''
 data_path  = '/home/zhangzhipeng/software/data' #截取过的长度为3001个点的sac三分量文件 
 npz_path   = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/dataset/one_pred'   #将sac三分量转存成npz数据后保存位置。
 
@@ -60,7 +61,7 @@ for key,value in save_dict.items():
 f.close()   
 
 print('convert %s sac data to npz dat'%(data_num))
-
+'''
 
 
 
@@ -153,6 +154,8 @@ def sta_list(tuple_list):
     left1 = add_zero(left)
     return right1,left1
 
+
+'''
 out_name  = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/output/picks.csv' #存储结果的csv文件
 names = []
 
@@ -207,7 +210,7 @@ print (len(out))
 
 #right,left = sta_list(out)  #处理统计时间差，将其整理好，以备画图时用，只保留误差在0.13-0.14(1.3)之下的，其他的不要了。
 #plot_bar(right,left)           #画柱状图
-
+'''
 
 
 
@@ -275,23 +278,6 @@ for data in data_files:
     plot_waveform_npz(wrong_data_fig,file_name,data,human_tp,AI_tP)
 
 '''
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
