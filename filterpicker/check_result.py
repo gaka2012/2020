@@ -152,8 +152,8 @@ def read_result(filename,man_made):
             min_sub = subtract
             min_i   = i
             FP_pick = newtime
-    return FP_pick_list
-    #return min_sub,min_i,FP_pick #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负，同时返回最小值所在的行数，如果是
+    #return FP_pick_list
+    return min_sub,min_i,FP_pick #返回的是时间差的绝对值最小值，但是返回的不是绝对值，有正有负，同时返回最小值所在的行数，如果是
                                  #0则表示FP没有拾取，是1则表示第一行的拾取误差最小，因为是i计数是从1开始的。
                                  #newtime是FP拾取的绝对时间
             
@@ -453,7 +453,7 @@ def plot_waveform_npz(plot_dir,file_name,data,itp):
     plt.savefig(png_name)
     plt.close()  
 
-
+'''
 data_path  = '/home/zhangzhipeng/software/github/data/no_pick' #遍历一个月的所有数据 
 save_dir = '/home/zhangzhipeng/software/github/data/no_pick/figure'  #将sac三分量画图后保存位置。
 
@@ -475,17 +475,17 @@ for data in data_files:
     data=np.asarray(co)
     tp_list = [3000]
     
-    '''
+    
     try:
         tp1 = st[0].stats.sac.t9
         tp2 = st[0].stats.sac.t8
         tp_list = [tp1,tp2]
     except AttributeError:
         tp_list = [tp1,60]
-    '''  
+     
     #tp_list = [int(i*100) for i in tp_list]
     plot_waveform_npz(save_dir,figure_name,data,tp_list)
-
+'''
 
 
 
@@ -581,8 +581,27 @@ print ('there are %s noise, FP picked %s which is wrong'%(total,pick_num))
 
 '''
 
+fa = open('test.txt')
+A  = fa.readlines()
+fa.close()
 
+total = len(A) #总的噪声的数量
+pick_num = 0   #拾取的数量，因为是噪声，拾取说明是错误。
 
+for line in A:
+    path,answer = line.split()
+    if answer != '-1234':  #说明改事件是个地震，而不是噪声
+        try:
+            subprocess.call('./picker_func_test %s zday1.txt  522 1206 61 10 7' %(path),shell=True) #得到一个数据的结果，检查zday1.txt中的自动拾取的结果。
+            man_result  = UTCDateTime(answer)  #人工拾取
+            ret_result  = read_result('zday1.txt',man_result) #调用函数计算自动拾取与手动拾取的误差最小值
+            min_result  = ret_result[0]  #手动拾取与自动拾取的误差，
+            pick_num    = min_result*100+3000 #自动拾取的点数
+            print (min_result,pick_num)
+            
+        except Exception as e: #所有异常，输出到文件中
+            print (e)
+            
 
 
 

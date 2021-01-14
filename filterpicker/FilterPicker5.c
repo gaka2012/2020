@@ -267,7 +267,8 @@ void Pick(
                              //allowNewPickIndex等于一个正常的数值才允许进行pick
                 // _DOC_ find last point in tUpEvent window where charFunct rose past threshold1 and integralCharFunct greater than threshold back to this point
                 m = mem->upEventBufPtr;
-              //  printf("mem->upEventBufPtr==%d\n",mem->upEventBufPtr);
+                
+                //printf("mem->upEventBufPtr==%d\n",mem->upEventBufPtr);
                 integralCharFunctClippedWindow = mem->charFunctClippedValue[m];
               // printf("mem->charFunctClippedValue[m]==%f\n",mem->charFunctClippedValue[m]);
                 k = 0;
@@ -306,8 +307,11 @@ void Pick(
                                 mem->triggerNumRecursiveIndex = mem->charFunctNumRecursiveIndex[m];
                                 // _DOC_ set index for pick uncertainty begin and end
                                 indexUpEventTrigger = n - k;
-                             //   printf("k==%d\n",k);
+                                //printf("k==%d\n",k);
+                                //printf("m==%d\n",m);
+                                //printf("n==%d\n",n);
                                 indexUncertaintyPick = mem->indexUncertainty[mem->triggerNumRecursiveIndex][m]; // AJ
+                                //printf("indexUncertaintyPick==%d\n",indexUncertaintyPick);
                               //  printf("mem->triggerNumRecursiveIndex==%d\n",mem->triggerNumRecursiveIndex);
                                 // _DOC_ evaluate polarity based on accumulated derivative
                                 // _DOC_    (=POS if derivative_sum > 0, = NEG if derivative_sum < 0,
@@ -424,6 +428,8 @@ void Pick(
                 // _DOC_    uncertaintyThreshold) and trigger time (characteristic function >= threshold1)
                 // _DOC_    pick begin is pick time - (trigger time - uncertainty threshold)
                 indexBeginPick = indexUncertaintyPick - (indexUpEventTrigger - indexUncertaintyPick);
+                //printf("indexUncertaintyPick==%d\n",indexUncertaintyPick);
+                //printf("indexUpEventTrigger==%d\n",indexUpEventTrigger);
                 indexEndPick = indexUpEventTrigger;
                 triggerPeriod = mem->period[mem->triggerNumRecursiveIndex];
                 // check that uncertainty range is >= triggerPeriod / 20.0  // 20101014 AJL

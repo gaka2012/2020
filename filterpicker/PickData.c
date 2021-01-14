@@ -124,8 +124,10 @@ char* printNlloc(char* pick_str, PickData* pickData, double dt, char* label, cha
 	sec += dt * (pickData->indices[0] + pickData->indices[1]) / 2.0;
 	//printf("num==%f\n",(pickData->indices[0] + pickData->indices[1]) / 2.0);
 	fn=fopen("num.txt","a+");
-        fprintf(fn,"%f\n",(pickData->indices[0] + pickData->indices[1]) / 2.0);
-        fclose(fn);
+	fprintf(fn,"%f\n",(pickData->indices[0]));
+    fprintf(fn,"%f\n",(pickData->indices[1]));
+    fprintf(fn,"%f\n",(pickData->indices[0] + pickData->indices[1]) / 2.0);
+    fclose(fn);
     //printf("%f\n",sec);
 	while (sec >= 60.0) {
 		min++;

@@ -159,7 +159,7 @@ for data in data_files:
 fa = open('test.txt','a+')
 
 i = 0
-datas = glob.glob('/home/zhangzhipeng/data/test_data/*.BHZ.sac')
+datas = glob.glob('/home/zhangzhipeng/software/data/test_data/*.BHZ.sac')
 for data in datas:
     st = read(data)
     start = st[0].stats.starttime
@@ -220,6 +220,10 @@ def plot_waveform_npz_3000(save_dir,file_name,data,char_data):
     plt.subplot(2,1,2,sharex=ax)
     t=np.linspace(0,char_data.shape[0]-1,char_data.shape[0]) #(0,9000,9001)
     plt.plot(t,char_data)
+    data_max=max(char_data)
+    data_min=min(char_data)
+    plt.vlines(206,data_min,data_max,colors='r') 
+    
     
     plt.suptitle(file_name,fontsize=25,color='r')
     png_name=file_name+'.png' 
@@ -229,7 +233,7 @@ def plot_waveform_npz_3000(save_dir,file_name,data,char_data):
 
 
 
-#加载特征函数,准备用来画图
+#加载特征函数,准备用来画图,原始数据的shape是9001，太长了，只画其中的一部分，2000-4000
 fa = open('zzp1.txt','r')
 A  = fa.readlines()
 fa.close()
@@ -242,30 +246,61 @@ for line in A:
     char_list.append(float(char))
     
 print('there are %s lines'%(line_num))
-char_data = np.asarray(char_list)
+char_data = np.asarray(char_list)[2800:3500]
 print (char_data.shape)
 
-st = read('/home/zhangzhipeng/data/test_data/SC.AXI_20180128020412.BHZ.sac')
+st = read('/home/zhangzhipeng/software/data/test_data/*.BHZ.sac')
 co=st[0].copy()
 #去均值，线性，波形歼灭,然后滤波
 co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
 co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
     
 #将滤波后的数据转换成numpy格式，并计算人工与FP拾取的结果，tp是人工拾取，Fp是FP拾取的结果，都画在一起。
-data=np.asarray(co)
+data=np.asarray(co)[2800:3500]
 print (data.shape)
 
 
 plot_waveform_npz_3000('figure/','test',data,char_data) 
 
 
+#在同一幅图中，画2个折线图
 
 
 
+'''
+plt.plot(y1)
+    
+name = 'event_entropy_line_chart'
+plt.title(name,fontsize=24,color='r')
+plt.xlabel('x',fontsize=25) #加上横纵坐标轴的描述。
+plt.ylabel('y',fontsize=25)
 
+x_show = [1,2,3,4,5,6,7]
+y_show = [1,2,3,4,5]
+ax.set_xticks(x_show)             #显示的坐标，只显示0,1,10,其他不显示
+ax.set_xticklabels(x_show,rotation=0,fontsize=30)  #
+ax.set_yticks(y_show)             #显示的坐标，只显示0,1,10,其他不显示
+ax.set_yticklabels(y_show,rotation=0,fontsize=30)  #
+'''
 
+'''
+plt.figure(figsize=(25,15))
+y = [3,3.2,3.4,3.5,3.5,3.3]
+plt.figure(figsize=(10, 8))
+plt.title('test')
 
+data_max=max(y)
+data_min=min(y)
+plt.plot(y)
+plt.vlines(3,data_min,data_max,colors='r') 
 
+#添加箭头和注释： 注释内容      箭头起点         注释内容位置(箭头终点)           箭头属性
+#https://blog.csdn.net/qq_36387683/article/details/101377416
+plt.annotate('trigger time', xy=(3, 3.5), xytext=(2, 3.5), arrowprops=dict(facecolor='black', shrink=0.05))
+
+plt.savefig('test_figure')
+plt.close()
+'''
 
 
 
