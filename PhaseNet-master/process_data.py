@@ -475,7 +475,7 @@ f.close()
 '''
 #标签test2.2 ai识别的结果，并将识别错误的，需要所有的地震事件名称，csv结果文件。
 
-'''
+
 filename='./mseed_data/90_s_event_info.json'
 out_name = './output/picks.csv'
 data_path = '/bashi_fs/centos_data/zzp/120_data' #原始数据位置
@@ -527,9 +527,9 @@ with open(out_name) as f:
                     
 #print (out_dict)
 pick_num = 0 #最后到的地震数量的总数
-less_one = 0.5 #只有残差小于这个数的才会被装到列表中。
+less_one = 0.3 #只有残差小于这个数的才会被装到列表中。
 no_pick_num,less_one_num = 0,0
-ai_result = []
+ai_result = [] #列表，里面是很多个元组，每个元组都是残差以及数值1(用来画图)
 ai_dict,wrong_dict = {},{}
 ai_keys = list(out_dict.keys())
 
@@ -540,7 +540,7 @@ for key in keys:
     if key in ai_keys:
         pick_num+=1
         resudal = (out_dict[key]-3000)/100 #AI拾取到时与手动拾取的残差
-        if abs(resudal)<less_one:
+        if abs(resudal)<=less_one:
             tem_list = [resudal,1]
             ai_result.append(tem_list) #误差元组，用来画图
             less_one_num +=1
@@ -562,7 +562,6 @@ filename='ai_result.json'
 with open(filename,'w') as file_obj:
     json.dump(ai_result,file_obj)
 
-'''
 
 
 
@@ -805,6 +804,7 @@ print('there are %s event'%(num))
     
 #读取phasenet跑的连续波形数据(90s)的结果，建立字典，键是mseed文件名称，值是相对应的拾取点数最好的一个，
 
+'''
 out_name = './output/picks.csv'
 out_dict = {}
 with open(out_name) as f:
@@ -839,7 +839,7 @@ with open(out_name) as f:
 with open('ai_name_pick.json','w') as ob:
     json.dump(out_dict,ob)     
 
-
+'''
 
 
 
