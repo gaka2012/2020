@@ -581,6 +581,23 @@ print ('there are %s noise, FP picked %s which is wrong'%(total,pick_num))
 
 '''
 
+fa = open('test.txt','a+')
+
+i = 0
+datas = glob.glob('/home/zhangzhipeng/software/data/test_data/*.BHZ.sac')
+for data in datas:
+    st = read(data)
+    start = st[0].stats.starttime
+    at = st[0].stats.sac
+    tp = start+at.a-at.b
+    #写入数据文件所在路径以及tp到时
+    fa.write(data+' '+str(tp))
+    fa.write('\n')
+    i+=1
+fa.close()
+print ('there are %s data'%(str(i)))
+
+
 fa = open('test.txt')
 A  = fa.readlines()
 fa.close()

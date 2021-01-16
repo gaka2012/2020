@@ -216,14 +216,93 @@ def plot_waveform_npz_3000(save_dir,file_name,data,char_data):
     plt.subplot(2,1,1,sharex=ax)
     t=np.linspace(0,data.shape[0]-1,data.shape[0]) #(0,9000,9001)
     plt.plot(t,data)
+    plt.vlines(100,-500,500,colors='r') 
+    plt.annotate('mannual pick', xy=(99,250), xytext=(44, 250), fontsize=40,arrowprops=dict(facecolor='black', shrink=0.05))
+    plt.xticks(fontsize=40) 
+    plt.yticks([])
     
     plt.subplot(2,1,2,sharex=ax)
     t=np.linspace(0,char_data.shape[0]-1,char_data.shape[0]) #(0,9000,9001)
     plt.plot(t,char_data)
     data_max=max(char_data)
     data_min=min(char_data)
-    plt.vlines(206,data_min,data_max,colors='r') 
+    plt.vlines(118,0,20,colors='r') 
+    plt.annotate('auto pick', xy=(117, 10), xytext=(75, 10), fontsize=40,arrowprops=dict(facecolor='black', shrink=0.05))
+    #添加箭头和注释： 注释内容      箭头起点         注释内容位置(箭头终点)           箭头属性
     
+    plt.yticks([])
+    plt.xticks(fontsize=40)        
+    plt.suptitle(file_name,fontsize=25,color='r')
+    png_name=file_name+'.png' 
+    plt.savefig(save_dir+png_name)
+    #os.system('mv *.png png') 
+    plt.close()   
+
+
+
+#加载特征函数,准备用来画图,原始数据的shape是9001，太长了，只画其中的一部分，2000-4000
+fa = open('zzp1.txt','r')
+A  = fa.readlines()
+fa.close()
+
+char_list = [] #特征函数列表
+line_num = 0
+for line in A:
+    line_num +=1
+    char = line.split()[1]
+    char_list.append(float(char))
+    
+print('there are %s lines'%(line_num))
+char_data = np.asarray(char_list)[2900:3100]
+print (char_data.shape)
+
+st = read('/home/zhangzhipeng/software/data/test_data/*.BHZ.sac')
+co=st[0].copy()
+#去均值，线性，波形歼灭,然后滤波
+co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
+    
+#将滤波后的数据转换成numpy格式，并计算人工与FP拾取的结果，tp是人工拾取，Fp是FP拾取的结果，都画在一起。
+data=np.asarray(co)[2900:3100]
+print (data.shape)
+
+
+plot_waveform_npz_3000('figure/','original',data,char_data) 
+
+
+'''
+def plot_waveform_npz_3000(save_dir,file_name,data,char_data): 
+    
+    fig = plt.figure()
+    plt.figure(figsize=(25,15))
+    ax=plt.subplot(2,1,1) #(3,1,1) 输入的数据shape是3000,3
+
+    ax = plt.subplot(2,1,1,sharex=ax)
+    t=np.linspace(0,data.shape[0]-1,data.shape[0]) #(0,9000,9001)
+    plt.plot(t,data)
+    plt.vlines(3000,-500,500,colors='r') 
+    plt.annotate('', xy=(3500,-700), xytext=(3200, -200), fontsize=20,arrowprops=dict(facecolor='black', shrink=0.05))
+    plt.xticks([]) 
+    plt.yticks([-2000,1000])
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+    ax1=plt.subplot(2,1,2)
+    t=np.linspace(0,char_data.shape[0]-1,char_data.shape[0]) #(0,9000,9001)
+    plt.plot(t,char_data)
+    data_max=max(char_data)
+    data_min=min(char_data)
+    plt.vlines(3018,0,40,colors='r') 
+    plt.annotate("",xy=(3500, 20), xytext=(3200, 10),arrowprops=dict(facecolor='black', shrink=0.05))
+    #添加箭头和注释： 注释内容      箭头起点         注释内容位置(箭头终点)           箭头属性
+    
+    plt.yticks([])
+    plt.xticks([0,2000,4000,6000,8000],fontsize=30)   
+    #plt.axis('off')     
+    ax1.spines['top'].set_visible(False)#去掉上面的图框
+    ax1.spines['left'].set_visible(False)#去掉上面的图框
+    ax1.spines['right'].set_visible(False)#去掉上面的图框
     
     plt.suptitle(file_name,fontsize=25,color='r')
     png_name=file_name+'.png' 
@@ -246,7 +325,7 @@ for line in A:
     char_list.append(float(char))
     
 print('there are %s lines'%(line_num))
-char_data = np.asarray(char_list)[2800:3500]
+char_data = np.asarray(char_list)
 print (char_data.shape)
 
 st = read('/home/zhangzhipeng/software/data/test_data/*.BHZ.sac')
@@ -256,53 +335,12 @@ co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.
 co=co.filter('bandpass',freqmin=1,freqmax=15) #带通滤波
     
 #将滤波后的数据转换成numpy格式，并计算人工与FP拾取的结果，tp是人工拾取，Fp是FP拾取的结果，都画在一起。
-data=np.asarray(co)[2800:3500]
+data=np.asarray(co)
 print (data.shape)
 
 
-plot_waveform_npz_3000('figure/','test',data,char_data) 
-
-
-#在同一幅图中，画2个折线图
-
-
-
+plot_waveform_npz_3000('figure/','test',data,char_data)
 '''
-plt.plot(y1)
-    
-name = 'event_entropy_line_chart'
-plt.title(name,fontsize=24,color='r')
-plt.xlabel('x',fontsize=25) #加上横纵坐标轴的描述。
-plt.ylabel('y',fontsize=25)
-
-x_show = [1,2,3,4,5,6,7]
-y_show = [1,2,3,4,5]
-ax.set_xticks(x_show)             #显示的坐标，只显示0,1,10,其他不显示
-ax.set_xticklabels(x_show,rotation=0,fontsize=30)  #
-ax.set_yticks(y_show)             #显示的坐标，只显示0,1,10,其他不显示
-ax.set_yticklabels(y_show,rotation=0,fontsize=30)  #
-'''
-
-'''
-plt.figure(figsize=(25,15))
-y = [3,3.2,3.4,3.5,3.5,3.3]
-plt.figure(figsize=(10, 8))
-plt.title('test')
-
-data_max=max(y)
-data_min=min(y)
-plt.plot(y)
-plt.vlines(3,data_min,data_max,colors='r') 
-
-#添加箭头和注释： 注释内容      箭头起点         注释内容位置(箭头终点)           箭头属性
-#https://blog.csdn.net/qq_36387683/article/details/101377416
-plt.annotate('trigger time', xy=(3, 3.5), xytext=(2, 3.5), arrowprops=dict(facecolor='black', shrink=0.05))
-
-plt.savefig('test_figure')
-plt.close()
-'''
-
-
 
 
 

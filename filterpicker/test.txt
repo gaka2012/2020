@@ -1,1 +1,1 @@
-/home/zhangzhipeng/software/data/test_data/SC.AXI_20180101062906.BHZ.sac 2017-12-31T22:29:09.200000Z
+/home/zhangzhipeng/software/data/test_data/SC.YZP_20180910192200.BHZ.sac 2018-09-10T11:22:13.620000Z
