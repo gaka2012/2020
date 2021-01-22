@@ -147,7 +147,7 @@ class DataReader(object):
                                           self.target_placeholder: target})
     return 0
 
-  def start_threads(self, sess, n_threads=8):
+  def start_threads(self, sess, n_threads=1):
     print ('this is a test')
     for i in range(n_threads):
       thread = threading.Thread(target=self.thread_main, args=(sess, n_threads, i))

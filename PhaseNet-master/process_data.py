@@ -475,7 +475,7 @@ f.close()
 '''
 #标签test2.2 ai识别的结果，并将识别错误的，需要所有的地震事件名称，csv结果文件。
 
-
+'''
 filename='./mseed_data/90_s_event_info.json'
 out_name = './output/picks.csv'
 data_path = '/bashi_fs/centos_data/zzp/120_data' #原始数据位置
@@ -562,7 +562,7 @@ filename='ai_result.json'
 with open(filename,'w') as file_obj:
     json.dump(ai_result,file_obj)
 
-
+'''
 
 
 #1.5 sac单分量数据画图， 将数据格式转换为npz,进行滤波等处理，shape是1,9001，输入画完图的保存路径，文件名称，数据，tp到时
@@ -841,6 +841,128 @@ with open('ai_name_pick.json','w') as ob:
 
 '''
 
+#读取phasenet跑的连续波形数据(90s)的结果，建立字典，键是mseed文件名称，值是相对应的拾取点数最好的一个，
+
+'''
+out_name = './output/picks.csv'
+out_dict = {}
+p_big,pro = 0,0.8 #p波概率大于0.6的有几个
+with open(out_name) as f:
+    reader = csv.reader(f)  #读取csv文件内容
+    header = next(reader)   #返回文件的下一行，类型是列表
+    #print(header)
+   
+    for row in reader:
+        name = row[0] #'SC.AXI_20180104103927.mseed_0'
+        name_point = name.split('_')[-1] #文件名称的后缀 0,3000,6000等
+        file_name  = name.replace('_'+name_point,'') #文件名 SC.AXI_20180104103927.mseed
+        
+        if row[1]=='[]':
+                pass
+        else:
+            #找到AI拾取的结果
+            pick_nums = re.findall('\d+',row[1]) #返回一个列表，里面是str格式的拾取，有的有2个拾取
+            p = re.findall('\d+\.\d+',row[2])   #p波的概率，返回一个列表，里面是str格式的拾取，有的有2个
+            if float(p[0])>pro:
+                #print (p[0])
+                p_big+=1
+                
+                if int(name_point)<9000:
+                    pick_num = int(name_point)+int(pick_nums[0])
+                else:
+                    pick_num  = int(pick_nums[0])+int(name_point)-10500
+            
+                #更新字典，键是文件名，值是最小的到时拾取
+                if file_name not in out_dict.keys():                
+                    out_dict[file_name] = pick_num
+                else:
+                    if abs(out_dict[file_name]) < abs(pick_num):
+                        out_dict[file_name] = pick_num
+
+print ('there are %s noises probality bigger than %s'%(p_big,pro))
+                    
+      
+with open('noise.json','w') as ob:
+    json.dump(out_dict,ob)     
+'''
+
+
+
+#画npz数据， 数据格式是npz,shape是3,9001，输入画完图的保存路径，文件名称，数据
+'''
+def plot_waveform_npz(plot_dir,file_name,data,itp): 
+    plt.figure(figsize=(25,15))
+    ax=plt.subplot(data.shape[0],1,1) #(3,1,1) 输入的数据shape是3,9001
+    print(data.shape)
+    for j in range(data.shape[0]):
+        plt.subplot(data.shape[0],1,j+1,sharex=ax)
+        t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,9000,9001)
+        data_max=data[j,:].max()
+        data_min=data[j,:].min()
+        plt.plot(t,data[j,:])
+        plt.vlines(itp,data_min,data_max,colors='r') 
+        
+    #plt.suptitle(str(entropy),fontsize=25,color='r')
+    png_name=file_name+'.png' 
+    plt.savefig(plot_dir+png_name)
+    #os.system('mv *.png png') 
+    plt.close()  
+'''
+#1.5 sac单分量数据画图， 将数据格式转换为npz,进行滤波等处理，shape是1,9001，输入画完图的保存路径，文件名称，数据，tp到时
+
+
+def plot_waveform_npz(plot_dir,file_name,data,itp,num): 
+    plt.figure(figsize=(25,15))
+    data = data
+    t=np.linspace(0,data.shape[0]-1,data.shape[0]) #(0,9000,9001)
+    plt.plot(t,data)        
+    data_max=data.max()
+    data_min=data.min()
+    tp_num = itp
+    plt.vlines(tp_num,data_min,data_max,colors='red') 
+    #plt.vlines(tp_num[1],data_min,data_max,colors='r') 
+    
+    #title = str(tp_num[1])
+    plt.suptitle(str(num),fontsize=25)
+    
+    png_name=plot_dir+str(num)+'_'+file_name+'.png' #保留的文件名是信噪比加后面的信息
+    #print (png_name)
+    plt.savefig(png_name)
+    plt.close()  
+
+data_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/mseed_data/11419_data'  #存放原始噪声数据的位置
+with open('noise.json') as ob:
+    noise = json.load(ob)
+
+os.chdir(data_path)
+keys = list(noise.keys())
+num=0
+for name in keys[:200]:
+    st = read(name)    
+    num+=1
+    st.sort(keys=['channel'], reverse=False) #对三分量数据排序
+    co=st.copy()
+    #去均值，线性，波形歼灭,然后滤波
+    co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+    co=co.filter('bandpass',freqmin=1,freqmax=30) #带通滤波
+    #co=co.filter('highpass',freq=20)        
+        #将滤波后的数据转换成numpy格式，
+    data=np.asarray(co)    #(3,9001)  
+    tp = noise[name]
+    z_channel = data[2,:]  #(9001)
+    #print (tp)
+    part = z_channel[tp-2000:tp+2000]
+    
+    try:
+        plot_waveform_npz('/home/zhangzhipeng/software/github/2020/PhaseNet-master/mseed_data/figure/',name,part,2000,num)
+    except ValueError:
+        print(name)
+    #try:
+    #    plot_waveform_npz('/home/zhangzhipeng/software/github/2020/PhaseNet-master/mseed_data/figure/',name,z_channel,tp)
+    #except ValueError:
+    #    print (name)
+    
+    #print (data.shape,type(noise[name]))
 
 
 

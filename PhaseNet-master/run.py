@@ -445,7 +445,7 @@ def pred_fn(args, data_reader, figure_dir=None, result_dir=None, log_dir=None):
 
   with tf.Session(config=sess_config) as sess:
 
-    threads = data_reader.start_threads(sess, n_threads=8)
+    threads = data_reader.start_threads(sess, n_threads=1)
 
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=5)
     init = tf.global_variables_initializer()

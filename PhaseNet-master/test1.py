@@ -215,7 +215,7 @@ print (len(out))
 
 
 #遍历Phaset没有拾取或者是拾取误差大于1.4s的数据，画图，其中human_tp是人工拾取，AI_tp是phaset拾取的结果
-'''
+
 def plot_waveform_npz(plot_dir,file_name,data,itp,its): 
     #画npz数据， 数据格式是npz,shape是(3000,)，输入画完图的保存路径‘/’，文件名称，数据
     plt.figure(figsize=(25,15))
@@ -277,7 +277,6 @@ for data in data_files:
     
     plot_waveform_npz(wrong_data_fig,file_name,data,human_tp,AI_tP)
 
-'''
 
 
 

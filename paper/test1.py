@@ -26,11 +26,12 @@ def plot_multi_bar(y1_list,y2_list,y3_list):
     total_width, n = 0.8, 4  
     width = 0.15  
     
-    plt.figure(figsize=(20,12),dpi=200)
+    plt.figure(figsize=(16,10),dpi=300)  
+    ax=plt.subplot(1,1,1) #(3,1,1) 输入的数据shape是3000,3
     
-    plt.bar(x-width/2, y1_list, width=width, label='FilterPicker',fc = 'red')  
+    plt.bar(x-width/2, y1_list, width=width, label='PhaseNet',fc = 'red')  
 
-    plt.bar(x+width/2, y2_list, width=width, label='PhaseNet',fc = 'dodgerblue')  
+    plt.bar(x+width/2, y2_list, width=width, label='FilterPicker',fc = 'dodgerblue')  
 
     x_label = [0,1,2,3] #在哪个位置写x轴标签
     y_label = [0.05,0.1,0.15,0.2]
@@ -39,8 +40,12 @@ def plot_multi_bar(y1_list,y2_list,y3_list):
     plt.yticks(y_label,y_name_list,fontsize=30)
     plt.xlabel('信噪比',fontproperties=font,fontsize=35) #加上横纵坐标轴的描述。
     plt.ylabel('错误率',fontproperties=font,fontsize=35) #加上横纵坐标轴的描述。
+    ax.spines['bottom'].set_linewidth('2.0')#设置边框线宽为2.0
+    ax.spines['top'].set_linewidth('2.0')#去掉上面的图框
+    ax.spines['left'].set_linewidth('2.0')#去掉上面的图框
+    ax.spines['right'].set_linewidth('2.0')#去掉上面的图框
     
-    plt.legend(loc='upper right', frameon=True,fontsize=20)  
+    plt.legend(loc='upper right', frameon=True,fontsize=30)  
     plt.savefig('multiply_bar')
     #plt.show()
     
@@ -63,7 +68,7 @@ def return_snr_dist(snr_list):
 def plot_line_chart(y,y1):
 
     #在同一幅图中，画2个散点图
-    plt.figure(figsize=(20,12),dpi=600)
+    plt.figure(figsize=(20,12),dpi=300)
 
     ax = plt.subplot(1,1,1)
     x = [i for i in range(len(y))] #根据能量的长度生成x轴。
@@ -77,7 +82,7 @@ def plot_line_chart(y,y1):
     
 
     
-    plt.hlines(2.5,0,2617,colors='black') 
+    plt.hlines(2.5,0,2617,colors='black',linewidth=3) 
     
     #name = 'event_entropy_line_chart'
     #plt.title(name,fontsize=24,color='r')
@@ -92,11 +97,15 @@ def plot_line_chart(y,y1):
     ax.set_xticklabels(x_show,rotation=0,fontsize=30)  #
     ax.set_yticks(y_show)             #显示的坐标，只显示0,1,10,其他不显示
     ax.set_yticklabels(y_show,rotation=0,fontsize=30)  #
+    ax.spines['bottom'].set_linewidth('2.0')#设置边框线宽为2.0
+    ax.spines['top'].set_linewidth('2.0')#去掉上面的图框
+    ax.spines['left'].set_linewidth('2.0')#去掉上面的图框
+    ax.spines['right'].set_linewidth('2.0')#去掉上面的图框
 
 
     #将图片保存下来。
     #plt.legend(loc=0,prop={'size':30})
-    plt.xlabel('事件',fontproperties=font,fontsize=40) #加上横纵坐标轴的描述。
+    plt.xlabel('噪声事件/个',fontproperties=font,fontsize=40) #加上横纵坐标轴的描述。
     plt.ylabel('熵值',fontproperties=font,fontsize=40) #加上横纵坐标轴的描述。
     plt.savefig('event_noise_entropy.png')
     plt.close()
@@ -168,7 +177,7 @@ datas = glob.glob(data_path+'/*.BHZ.sac')
 datas = [os.path.basename(i) for i in datas]
 
 num = 0
-os.chdir(data_path)
+#os.chdir(data_path)
 noise = {} #噪声的熵值
 for sac_name in keys:
     if sac_name in datas:
@@ -194,10 +203,10 @@ for sac_name in keys:
         #plot_waveform_npz(save_png,sac_name.replace('BHZ.sac',''),data,tp,entropy)
 print('there are %s noise'%(num))
 
-with open('/home/zhangzhipeng/software/github/2020/fp_noise_entropy.json','w') as ob:
-    json.dump(noise,ob)
-'''
+#with open('/home/zhangzhipeng/software/github/2020/fp_noise_entropy.json','w') as ob:
+#    json.dump(noise,ob)
 
+'''
 #1.2 读取FP拾取的噪声数据熵值形成的列表
 '''
 with open('fp_noise_entropy.json') as ob:
@@ -290,7 +299,6 @@ print (num)
 
 
 
-
 #计算0级以上震中距小于50km地震熵值，并将熵值大于2.2的放到一个文件夹中
 
 data_path = '/home/zhangzhipeng/software/data/mag_two_data' #存放2级以上地震数据的位置
@@ -298,7 +306,7 @@ save_png  = '/home/zhangzhipeng/software/data/mag_two_data/figure'
 event_entropy = {}
 num = 0
 datas = glob.glob(data_path+'/*.BHZ.sac')
-for sac_name in datas:
+for sac_name in datas[:2617]:
     name = os.path.basename(sac_name)
     tp = 3000
     st = read(sac_name)
@@ -313,8 +321,9 @@ for sac_name in datas:
     temp = [entropy]
     event_entropy.setdefault(name,[]).extend(temp)
     if entropy >2.5:
-        #plot_waveform_npz(save_png,name.replace('BHZ.sac',''),data,tp,entropy)
+        plot_waveform_npz(save_png,name.replace('BHZ.sac',''),data,tp,entropy)
         num+=1
+print (num)
 with open('/home/zhangzhipeng/software/github/2020/event_entropy.json','w') as ob:
     json.dump(event_entropy,ob)    
     
@@ -391,7 +400,7 @@ for mseed in mseeds:
             print(mseed_name)
 print('there are %s noise'%(num))     
 
-      
+    
 with open('/home/zhangzhipeng/software/github/2020/ai_noise_entropy.json','w') as ob:
     json.dump(noise_entropy,ob)
 
@@ -517,6 +526,7 @@ with open('name_snr.json','w') as ob:
 '''
 
 #读取所有的信噪比，画信噪比饼状图
+
 '''
 with open('name_snr.json') as ob:
     name_snr = json.load(ob)
@@ -554,12 +564,20 @@ explode = (0, 0, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
 #colors = ['white','white','white','white']
 colors = ['lightgreen','gold','lightskyblue','lightcoral']
  
+plt.figure(figsize=(25,15),dpi=300)
 fig1, ax1 = plt.subplots()
 
-ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%',
+patches,l_text,p_text = ax1.pie(sizes, explode=explode, labels=labels,autopct='%1.1f%%',
         shadow=False, startangle=90,colors=colors,wedgeprops={'linewidth':0.5,'edgecolor':'black'})
+        
+#方法是把每一个text遍历。调用set_size方法设置它的属性
+for t in l_text:
+    t.set_size(15)
+for t in p_text:
+    t.set_size(15) 
+        
 ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
- 
+
  
 #plt.show()
 plt.savefig('snr_dist')
@@ -606,7 +624,7 @@ for key,value in fp.items():
     if value[0]==0:
         wrong_num+=1
         if key in name_snr.keys():
-            wrong_snr.append(name_snr[key][0])
+            wrong_snr.append(name_snr[key][0])	
 
 print ('fp has %s wrong picks'%(wrong_num))
 print ('there are %s wrong picks snr'%(len(wrong_snr)))
@@ -624,7 +642,7 @@ for key,value in name_snr.items():
     name = key.replace('BHZ.sac','mseed')
     if name in ai.keys():
         resudal = abs(ai[name])
-        if resudal > 50:
+        if resudal > 30:
             ai_snr.append(name_snr[key][0])
         
     else:
@@ -639,6 +657,10 @@ all_snr = return_snr_dist(snr)
 fp_snr  = return_snr_dist(wrong_snr)
 ai_snr  = return_snr_dist(ai_snr)
 print (all_snr,fp_snr,ai_snr)
+
+fp_snr,ai_snr = [747,67,23,48],[476,41,13,34]
+print (all_snr,fp_snr,ai_snr)
+
 fp_snr = list(np.array(fp_snr)/np.array(all_snr))
 ai_snr = list(np.array(ai_snr)/np.array(all_snr))
 plot_multi_bar(ai_snr,fp_snr,all_snr)
@@ -647,7 +669,7 @@ plot_multi_bar(ai_snr,fp_snr,all_snr)
   
 #得到fp拾取的噪声的熵值，ai拾取的噪声的熵值，地震事件中震级在0以上，震中距50km以内的地震的熵值，画折线图
 #折线图中分成2部分数据，ai拾取错误和fp拾取的噪声合并为一个列表，地震事件单独一个列表
-'''
+
 with open('fp_noise_entropy.json') as ob:
     fp_noise_entropy = json.load(ob)
     
@@ -667,7 +689,8 @@ ai_fp.extend(fp_noise_num)
 ai_fp.extend(ai_noise)
 
 print('fp picks %s noise and AI picks %s noise'%(len(fp_noise_num),len(ai_noise)))    
-    
+
+   
 with open('event_entropy.json') as ob:
     name_snr = json.load(ob)
 event_entropy = list(name_snr.values())
@@ -675,7 +698,7 @@ event_entropy = [i[0] for i in event_entropy]
 part_event = event_entropy[:2617]
 #print (part_event)
   
-threshold = 2.5
+threshold = 2.4
 big_thre = list(filter(lambda a:a>threshold,part_event))
 
 
@@ -689,6 +712,245 @@ print ('event has %s and we choose %s event for plotting %s of event entropy big
 print('fp noise has %s entropy bigger than %s and ai has %s'%(len(fp_big),threshold,len(ai_big)))
 
 plot_line_chart(ai_fp,part_event)
+
+
+
+
+#统计熵值高于2.5的地震事件的震中距和震级信息。
 '''
+with open('90_s_event_info.json') as ob:
+    info_dict = json.load(ob)
+
+png_path = '/home/zhangzhipeng/software/data/mag_two_data/figure'
+names = glob.glob(png_path+'/*.png')
+
+for name in names:
+    sac_name = os.path.basename(name)
+    sac_name = sac_name.replace('png','BHZ.sac')
+    print(sac_name)
+    if sac_name in info_dict.keys():
+        print(info_dict[sac_name])
+'''
+
+#读取ai错误拾取的噪声，写csv文件，然后用phasenet跑一遍
+'''
+data_path = '/home/zhangzhipeng/software/data/noise_data/ai_pick/figure'
+noises = glob.glob(data_path+'/*.png')
+names = []
+for noise in noises:
+    name = os.path.basename(noise)
+    name = name.replace('.png','')
+    names.append(name)
+
+
+
+f = open('noise_1705.csv','w',encoding='utf-8')
+csv_writer = csv.writer(f)
+csv_writer.writerow (['fname','E','N','Z'])  #写入表头
+for i in names:
+    #print (key,value[0][0])
+    csv_writer.writerow([i,'BHE','BHN','BHZ']) #写入实际数据
+f.close()   
+'''
+
+
+#读取ai错误拾取的噪声，写csv文件，然后用phasenet跑一遍
+'''
+data_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/low_png'
+noises = glob.glob(data_path+'/*.png')
+names = []
+for noise in noises:
+    name = os.path.basename(noise)
+    name = name.replace('BHZ.sac.png','mseed')
+    names.append(name)
+
+
+
+f = open('noise_13.csv','w',encoding='utf-8')
+csv_writer = csv.writer(f)
+csv_writer.writerow (['fname','E','N','Z'])  #写入表头
+for i in names:
+    #print (key,value[0][0])
+    csv_writer.writerow([i,'BHE','BHN','BHZ']) #写入实际数据
+f.close()   
+'''
+
+'''
+def plot_waveform_npz(plot_dir,file_name,data,itp,num): 
+    plt.figure(figsize=(25,15))
+    data = data
+    t=np.linspace(0,data.shape[0]-1,data.shape[0]) #(0,9000,9001)
+    plt.plot(t,data)        
+    data_max=data.max()
+    data_min=data.min()
+    tp_num = itp
+    plt.vlines(tp_num,data_min,data_max,colors='red') 
+    #plt.vlines(tp_num[1],data_min,data_max,colors='r') 
+    
+    #title = str(tp_num[1])
+    plt.suptitle(str(num),fontsize=25)
+    
+    png_name=plot_dir+str(num)+'_'+file_name+'.png' #保留的文件名是信噪比加后面的信息
+    #print (png_name)
+    plt.savefig(png_name)
+    plt.close()  
+
+
+
+filename = 'noise_wrong.json'
+with open(filename) as file_obj:
+    info  = json.load(file_obj)    
+
+keys = list(info.keys())
+
+data_path = '/home/zhangzhipeng/software/data/noise_data/fp_pick' #存放噪声数据的位置
+save_png  = '/home/zhangzhipeng/software/data/noise_data/fp_pick/figure'
+datas = glob.glob(data_path+'/*.BHZ.sac')
+
+num = 0
+for sac_name in datas[:500]:
+    base_name = os.path.basename(sac_name)
+    num+=1
+    st = read(sac_name)
+    start = st[0].stats.starttime
+    end = st[0].stats.endtime
+    pick = UTCDateTime(info[base_name][0])
+    tp = int((pick-start)*100)
+    
+    co=st[0].copy()
+    #去均值，线性，波形歼灭,然后滤波
+    co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+    co=co.filter('bandpass',freqmin=1,freqmax=40) #带通滤波
+    
+    data=np.asarray(co) 
+    part = data[tp-3000:tp+3000]
+    try:
+        plot_waveform_npz('/home/zhangzhipeng/software/github/2020/PhaseNet-master/mseed_data/fp_figure/',base_name,part,3000,num)
+    except ValueError:
+        print(base_name)
+
+'''
+
+'''
+#画npz数据，shape是3000,3 输入画完图的保存路径，文件名称，数据
+def plot_waveform_npz_3000(data,tps,ai_data): 
+    plt.figure(figsize=(25,15),dpi=300)
+    #ax=plt.subplot(4,1,1) 
+    ax1 = plt.subplot(4,1,1)
+    t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,2999,3000)
+    plt.plot(t,data[0,:],color='black')
+    data_max=data[0,:].max()/2
+    data_min=data[0,:].min()/2
+    plt.vlines(2000,data_min,data_max,colors='red',linewidth=5) 
+    plt.xticks([]) 
+    plt.yticks([])
+    ax1.spines['bottom'].set_visible(False)#去掉上面的图框
+    ax1.spines['left'].set_visible(False)#去掉上面的图框
+    ax1.spines['right'].set_visible(False)#去掉上面的图框
+    
+    ax2 = plt.subplot(4,1,2)
+    t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,2999,3000)
+    plt.plot(t,data[1,:],color='black')
+    data_max=data[1,:].max()/2
+    data_min=data[1,:].min()/2
+    plt.vlines(2000,data_min,data_max,colors='red',linewidth=5) 
+    plt.xticks([]) 
+    plt.yticks([])
+    ax2.spines['bottom'].set_visible(False)#去掉上面的图框
+    ax2.spines['left'].set_visible(False)#去掉上面的图框
+    ax2.spines['right'].set_visible(False)#去掉上面的图框
+    ax2.spines['top'].set_visible(False)#去掉上面的图框
+    
+    ax3 = plt.subplot(4,1,3)
+    t=np.linspace(0,data.shape[1]-1,data.shape[1]) #(0,2999,3000)
+    plt.plot(t,data[2,:],color='black')
+    data_max=data[2,:].max()/2
+    data_min=data[2,:].min()/2
+    plt.vlines(2000,data_min,data_max,colors='red',linewidth=5) 
+    plt.xticks([]) 
+    plt.yticks([])
+    ax3.spines['bottom'].set_visible(False)#去掉上面的图框
+    ax3.spines['left'].set_visible(False)#去掉上面的图框
+    ax3.spines['right'].set_visible(False)#去掉上面的图框
+    ax3.spines['top'].set_visible(False)#去掉上面的图框
+    
+    ax4 = plt.subplot(4,1,4)
+    plt.plot(ai_data,color='black')
+    t=np.linspace(0,ai_data.shape[0]-1,ai_data.shape[0]) #(0,2999,3000)
+    data_max=max(ai_data)
+    data_min=max(ai_data)
+    plt.vlines(2000,data_min,data_max,color='red')
+    plt.xticks([0,1000,2000,3000,4000],[0,10,20,30,40],fontsize=30) 
+    plt.yticks([])
+    ax4.spines['left'].set_visible(False)#去掉上面的图框
+    ax4.spines['right'].set_visible(False)#去掉上面的图框
+    ax4.spines['top'].set_visible(False)#去掉上面的图框
+    
+    plt.xlabel('t/s',fontsize=40) #加上横纵坐标轴的描述。
+    png_name='test.png' 
+    plt.savefig(png_name)
+    plt.close()
+
+filename = 'noise_wrong.json'
+with open(filename) as file_obj:
+    info  = json.load(file_obj)    
+
+keys = list(info.keys())
+
+data_path = '/home/zhangzhipeng/software/github/2020/PhaseNet-master/low_png/data' #存放噪声数据的位置
+save_png  = '/home/zhangzhipeng/software/data/noise_data/fp_pick/figure'
+datas = glob.glob(data_path+'/*.BHZ.sac')
+
+num = 0
+parts = [] #将几个不同的数据放在一个列表中，准备画在一起
+tps   = [] #上面列表中存储的数据的到时
+for sac_name in datas:
+    base_name = os.path.basename(sac_name)
+    num+=1
+    st = read(sac_name)
+    start = st[0].stats.starttime
+    end = st[0].stats.endtime
+    pick = UTCDateTime(info[base_name][0])
+    tp = int((pick-start)*100)
+    
+    co=st[0].copy()
+    #去均值，线性，波形歼灭,然后滤波
+    co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+    co=co.filter('bandpass',freqmin=1,freqmax=20) #带通滤波
+    
+    data=np.asarray(co) 
+    part = data[tp-2000:tp+2000]
+    part = list(part)
+    parts.append(part)
+    tps.append(tp)
+
+#读取mseed数据中的高频振动信号(无幅值变化特征)
+with open('noise.json') as ob:
+    noise = json.load(ob)
+st = read(data_path+'/SC.JZG_20180404004941.mseed')
+st.sort(keys=['channel'], reverse=False) #对三分量数据排序
+co=st.copy()
+#去均值，线性，波形歼灭,然后滤波
+co.detrend('demean').detrend('linear').taper(max_percentage=0.05, max_length=10.)
+co=co.filter('bandpass',freqmin=1,freqmax=20) #带通滤波
+    #co=co.filter('highpass',freq=20)        
+        #将滤波后的数据转换成numpy格式，
+data=np.asarray(co)    #(3,9001)  
+name = 'SC.JZG_20180404004941.mseed'
+tp = noise[name]
+z_channel = data[2,:]  #(9001)
+#print (tp)
+data1 = z_channel[tp-2000:tp+2000]
+ai_data = list(data1)
+ai_data.extend([0]*298)
+ai_data = np.array(ai_data)
+
+
+fp_data = np.array(parts)
+print (fp_data.shape)
+plot_waveform_npz_3000(fp_data,tps,ai_data)
+'''
+
+
 
 
